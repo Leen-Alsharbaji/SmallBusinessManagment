@@ -19,3 +19,4 @@ samples, guidance on mobile development, and a full API reference.
 
 ## completed so far
 i have the flutter project initated,the firebase connected,firebase auth connected, system based app themeing
+sing in sign out app routing app desing theme prodcut stock view card grid 
