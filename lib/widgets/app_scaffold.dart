@@ -25,8 +25,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AppScaffold extends StatefulWidget {
   final Widget body;
   final String title;
+  final Color backgroundColor;
 
-  const AppScaffold({super.key, required this.body, this.title = ''});
+  const AppScaffold({super.key, required this.body, this.title = '', this.backgroundColor = const Color(0xFF283240)});
 
   @override
   State<AppScaffold> createState() => _AppScaffoldState();
@@ -49,8 +50,8 @@ class _AppScaffoldState extends State<AppScaffold> {
     Widget navList = ListView(
       children: [
         DrawerHeader(
-          decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-          child: const Text('Menu', style: TextStyle(color: Colors.white, fontSize: 20)),
+          decoration: BoxDecoration(color: const Color(0xFF283240)),
+          child: const Text('Menu', style: TextStyle(color: Color.fromARGB(255, 255, 255, 255), fontSize: 20)),
         ),
         ListTile(
           leading: const Icon(Icons.home),
@@ -82,6 +83,7 @@ class _AppScaffoldState extends State<AppScaffold> {
       }
 
       return Scaffold(
+        backgroundColor: const Color(0xFF283240),
         appBar: AppBar(title: Text(widget.title)),
         body: Row(
           children: [
@@ -105,6 +107,7 @@ class _AppScaffoldState extends State<AppScaffold> {
 
     // Authenticated small screens: standard drawer that opens/closes
     return Scaffold(
+      backgroundColor: const Color(0xFF283240),
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text(widget.title),

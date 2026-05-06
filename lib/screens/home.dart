@@ -30,6 +30,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Home',
+      backgroundColor: const Color(0xFF283240),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

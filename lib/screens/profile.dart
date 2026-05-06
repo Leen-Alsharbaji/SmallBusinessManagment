@@ -35,8 +35,9 @@ class ProfileScreen extends StatelessWidget {
 
     return AppScaffold(
       title: 'Profile',
+      backgroundColor: const Color(0xFF283240),
       body: Container(
-        color: Colors.blue,
+        color: const Color(0xFF283240),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
