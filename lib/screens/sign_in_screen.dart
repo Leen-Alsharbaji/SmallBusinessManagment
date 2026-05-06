@@ -1,3 +1,18 @@
+/*
+  sign_in_screen.dart
+
+  What this file does:
+  - Renders the sign-in UI using Firebase UI Auth.
+  - Keeps auth provider configuration in one place (the `providers` list).
+  - Calls `onSignedIn` when authentication completes so the app can
+    navigate to the appropriate screen.
+
+  How to modify:
+  - Add / remove providers in `providers`.
+  - Change navigation in `onSignedIn` to redirect users elsewhere after
+    successful sign-in.
+*/
+
 import 'package:flutter/material.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart' as firebase_ui_auth;
 
@@ -6,24 +21,22 @@ class SignInScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The list of available auth providers shown to the user.
     final providers = [firebase_ui_auth.EmailAuthProvider()];
 
     return Scaffold(
-      body: Container( 
+      body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomLeft,
             end: Alignment.topRight,
-            colors: [
-              Color(0xFF000080), 
-              Color(0xFF4A90E2), 
-              Color(0xFFB3E5FC), 
-            ],
+            colors: [Color(0xFF000080), Color(0xFF4A90E2), Color(0xFFB3E5FC)],
           ),
         ),
-        child: FirebaseUISignInScreen( 
+        child: FirebaseUISignInScreen(
           providers: providers,
           onSignedIn: () {
+            // Navigate to the profile route (registered in app.dart)
             Navigator.pushReplacementNamed(context, '/profile');
           },
         ),
@@ -32,7 +45,6 @@ class SignInScreen extends StatelessWidget {
   }
 }
 
-// Your existing FirebaseUISignInScreen stays exactly the same
 class FirebaseUISignInScreen extends StatelessWidget {
   final List<firebase_ui_auth.AuthProvider> providers;
   final VoidCallback onSignedIn;

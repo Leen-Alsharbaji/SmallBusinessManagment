@@ -37,6 +37,8 @@ dependencies:
   firebase_core: ^4.7.0
   firebase_auth: ^6.4.0
   firebase_ui_auth: ^3.0.1
+  responsive_grid_list: ^1.4.1
+  flutter_side_menu: ^0.5.41
 
 dev_dependencies:
   flutter_test:

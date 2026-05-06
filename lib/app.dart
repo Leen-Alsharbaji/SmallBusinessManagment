@@ -1,6 +1,24 @@
+/*
+  app.dart
+
+  What this file does:
+  - Declares `MyApp`, the root widget which configures named routes for
+    the application. The routes are:
+      - '/sign-in' -> SignInScreen
+      - '/home'    -> HomeScreen
+      - '/profile' -> ProfileScreen
+
+  How to modify:
+  - Add screens by registering new named routes in the `routes` map.
+  - You can also change initialRoute to an auth-aware decision if you
+    prefer to route users depending on their sign-in status.
+*/
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'sign_in_screen.dart';
+import 'screens/sign_in_screen.dart';
+import 'screens/home.dart';
+import 'screens/profile.dart';
+import 'screens/Product_stock_view.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -8,29 +26,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Firebase Auth Demo',
-      initialRoute: FirebaseAuth.instance.currentUser == null 
-          ? '/sign-in' 
-          : '/home',
+      
+      title: 'Small Business Management Platform',
+      initialRoute: '/sign-in', // Change this to '/sign-in' if you want to start at the sign-in screen.
       routes: {
         '/sign-in': (context) => const SignInScreen(),
         '/home': (context) => const HomeScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/product-stock': (context) => const ProductStockViewScreen(),
       },
+      
     );
   }
 }
 
-// Temporary home screen for testing
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
-      body: const Center(
-        child: Text('Successfully signed in!'),
-      ),
-    );
-  }
-}

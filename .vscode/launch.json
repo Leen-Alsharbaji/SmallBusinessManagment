@@ -1,0 +1,36 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "small_business_managment",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "small_business_managment (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "small_business_managment (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        
+ 
+    {
+      "name": "Flutter Web (Hot Reload)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--web-experimental-hot-reload"
+      ]
+    }
+  ]
+}
+    
