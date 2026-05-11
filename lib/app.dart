@@ -19,6 +19,10 @@ import 'screens/sign_in_screen.dart';
 import 'screens/home.dart';
 import 'screens/profile.dart';
 import 'screens/Product_stock_view.dart';
+import 'screens/manual_new_product_entry_form.dart';
+import 'screens/dashboard_analytics.dart';
+import 'screens/manual_sale_entry _form.dart';
+import 'screens/manual_prodct_stock_update_form.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -28,12 +32,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       
       title: 'Small Business Management Platform',
-      initialRoute: '/sign-in', // Change this to '/sign-in' if you want to start at the sign-in screen.
+      initialRoute: '/sign-in', 
       routes: {
         '/sign-in': (context) => const SignInScreen(),
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/product-stock': (context) => const ProductStockViewScreen(),
+        '/manual-sale-entry-form': (context) => const SalesEntryForm(),
       },
       
     );

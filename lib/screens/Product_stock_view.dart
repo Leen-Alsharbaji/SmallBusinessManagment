@@ -23,7 +23,7 @@
 */
 import 'package:flutter/material.dart';
 import 'package:responsive_grid_list/responsive_grid_list.dart';
-import 'package:small_business_managment/resuable_Widgets/product_Card.dart';
+import 'package:small_business_managment/widgets/product_Card.dart';
 import 'package:small_business_managment/widgets/app_scaffold.dart';
 
 class ProductStockViewScreen extends StatelessWidget {
@@ -35,13 +35,13 @@ class ProductStockViewScreen extends StatelessWidget {
       title: 'Product Stock',
       body: Container(
         color: const Color(0xFF283240),
-        padding: const EdgeInsets.only(top: 24.0), // top margin for cards
+        padding: const EdgeInsets.only(top: 24.0), 
         child: ResponsiveGridList(
           horizontalGridMargin: 16,
           verticalGridMargin: 16,
           minItemWidth: 200,
           children: List.generate(
-            20, // Replace with the actual number of products in stock
+            20, 
             (index) => ProductCard(index: index),
           ),
         ),

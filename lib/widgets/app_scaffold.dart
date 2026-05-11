@@ -58,16 +58,23 @@ class _AppScaffoldState extends State<AppScaffold> {
           title: const Text('Home'),
           onTap: () => Navigator.pushReplacementNamed(context, '/home'),
         ),
+          ListTile(
+          leading: const Icon(Icons.person),
+          title: const Text('Profile'),
+          onTap: () => Navigator.pushReplacementNamed(context, '/profile'),
+        ),
         ListTile(
           leading: const Icon(Icons.inventory),
           title: const Text('Product Stock'),
           onTap: () => Navigator.pushReplacementNamed(context, '/product-stock'),
         ),
+      
         ListTile(
-          leading: const Icon(Icons.person),
-          title: const Text('Profile'),
-          onTap: () => Navigator.pushReplacementNamed(context, '/profile'),
+          leading: const Icon(Icons.point_of_sale),
+          title: const Text('manual sale entry form'),
+          onTap: () => Navigator.pushReplacementNamed(context, '/manual-sale-entry-form'),
         ),
+
       ],
     );
 
