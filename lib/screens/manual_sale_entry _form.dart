@@ -3,13 +3,17 @@
 
   What this file does:
   - Provides a form for manually entering sales data for a product.
-  - Fetches available products from Firestore and presents them in a dropdown.
-  - Allows user to input quantity sold, select the sales platform, and pick a sale date.
-  - Saves the sale record to Firestore (collection "sales") and updates product stock.
+  - Fetches available products from unified_products collection in Firestore.
+  - Allows user to input quantity sold, sales price, currency, notes, and platform.
+  - When "Other" platform is selected, shows a text field for custom platform name.
+  - Saves the sale record to Firestore (collection "orders") and updates product stock.
+  - Includes an admin button to import test products from JSON file.
   - Displays success/error messages.
 */
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:small_business_managment/widgets/app_scaffold.dart';
@@ -27,89 +31,193 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
   
   // Product selection
   List<QueryDocumentSnapshot> _products = [];
-  String? _selectedProductId;
+  String? _selectedUnifiedProductId;
   String? _selectedProductName;
-  int _currentStock = 0;
+  String? _selectedBrand;
+  String? _selectedPlatformsList;
+  int _currentTotalStock = 0;
   
   // Sale details
   int _quantitySold = 1;
+  int _salesPrice = 0;
+  String _currency = 'USD';
   String _selectedPlatform = 'Trendyol';
+  String _otherPlatform = '';
+  bool _showOtherPlatformField = false;
+  String _notes = '';
   DateTime _saleDate = DateTime.now();
   
-  // Controller for date display
+  // Controllers
   final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _otherPlatformController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
   
   // UI state
   bool _isLoading = false;
   bool _isFetchingProducts = true;
+  bool _isImporting = false;
 
-  // List of platforms (can be extended)
+  // Lists
   final List<String> _platforms = [
     'Trendyol',
     'Amazon',
     'eBay',
     'Etsy',
+    'Hepsiburada',
     'Other',
+  ];
+
+  final List<String> _currencies = [
+    'USD',
+    'EUR',
+    'GBP',
+    'TRY',
+    'JPY',
+    'CNY',
   ];
 
   @override
   void initState() {
     super.initState();
-    _fetchProducts();          // ← COMMENT: Pulls all products from Firestore
-    _updateDateController();   // initialise date field
+    _fetchProducts();          
+    _updateDateController();  
   }
 
   @override
   void dispose() {
     _dateController.dispose();
+    _otherPlatformController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
   // -------------------- Firestore Methods --------------------
-  /// Fetches the list of products from Firestore 'products' collection.
-  /// Ordered by product name.
-  /// COMMENT: This is the main product pull from DB. If you need to debug,
-  /// check the snapshot.docs length and individual doc fields.
+  
+  /// Fetches the list of products from Firestore 'unified_products' collection
   Future<void> _fetchProducts() async {
     setState(() => _isFetchingProducts = true);
     try {
-      // COMMENT: The query below loads ALL products. For large catalogs,
-      // consider pagination or limiting fields.
       QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('products')
+          .collection('unified_products')
           .orderBy('name')
           .get();
       setState(() {
         _products = snapshot.docs;
         _isFetchingProducts = false;
       });
-      // COMMENT: snapshot.docs contains each product document.
-      // Each doc has .id and .data() e.g. doc['name'], doc['currentStock'].
     } catch (e) {
       setState(() => _isFetchingProducts = false);
       _showSnackBar('Failed to load products: $e');
     }
   }
 
+  /// Imports products from products.json file
+  Future<void> _importProductsFromJson() async {
+    // Check if products already exist
+    if (_products.isNotEmpty) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Products Already Exist'),
+          content: Text(
+            'You already have ${_products.length} products in your database. '
+            'Importing will ADD more products (not replace). '
+            'Do you want to continue?'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Add More'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+    
+    setState(() => _isImporting = true);
+    
+    try {
+      // Load the JSON file
+      final String jsonString = await rootBundle.loadString('products.json');
+      final List<dynamic> productsList = json.decode(jsonString);
+      
+      final firestore = FirebaseFirestore.instance;
+      int successCount = 0;
+      int errorCount = 0;
+      
+      // Add each product to Firestore
+      for (var product in productsList) {
+        try {
+          await firestore.collection('unified_products').add({
+            ...Map<String, dynamic>.from(product),
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          successCount++;
+          print('✓ Added: ${product['name']}');
+        } catch (e) {
+          print('✗ Failed: ${product['name']} - $e');
+          errorCount++;
+        }
+      }
+      
+      // Show result
+      _showSnackBar(
+        'Imported $successCount products successfully! ${errorCount > 0 ? "$errorCount failed." : ""}',
+        isError: false,
+      );
+      
+      // Refresh the product list
+      await _fetchProducts();
+      
+    } catch (e) {
+      print('Import error: $e');
+      _showSnackBar('Failed to import products: $e');
+    } finally {
+      setState(() => _isImporting = false);
+    }
+  }
+
   void _onProductSelected(String? productId) {
     if (productId == null) return;
-    // COMMENT: Locate the selected product document from the local list.
     final productDoc = _products.firstWhere((doc) => doc.id == productId);
     setState(() {
-      _selectedProductId = productId;
-      _selectedProductName = productDoc['name'];
-      _currentStock = productDoc['currentStock'] ?? 0;
+      _selectedUnifiedProductId = productId;
+      _selectedProductName = productDoc['name'] ?? 'Unnamed';
+      _selectedBrand = productDoc['brand'] ?? '';
+      _selectedPlatformsList = productDoc['platforms'] != null 
+          ? (productDoc['platforms'] as List).join(', ') 
+          : '';
+      _currentTotalStock = productDoc['totalStock'] ?? 0;
+    });
+  }
+
+  void _onPlatformChanged(String? platform) {
+    if (platform == null) return;
+    setState(() {
+      _selectedPlatform = platform;
+      _showOtherPlatformField = (platform == 'Other');
+      if (!_showOtherPlatformField) {
+        _otherPlatform = '';
+        _otherPlatformController.clear();
+      }
     });
   }
 
   Future<void> _submitSale() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedProductId == null) {
+    if (_selectedUnifiedProductId == null) {
       _showSnackBar('Please select a product');
       return;
     }
-    if (_quantitySold > _currentStock) {
-      _showSnackBar('Insufficient stock! Available: $_currentStock');
+    if (_quantitySold > _currentTotalStock) {
+      _showSnackBar('Insufficient stock! Available: $_currentTotalStock');
       return;
     }
 
@@ -118,22 +226,27 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
     try {
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
       
-      // 1. Create a sale record in 'sales' collection
-      // COMMENT: This writes a new document with the sale details.
-      await firestore.collection('sales').add({
-        'productId': _selectedProductId,
+      final String finalPlatform = _showOtherPlatformField && _otherPlatform.isNotEmpty
+          ? _otherPlatform
+          : _selectedPlatform;
+      
+      // Create sale record in 'orders' collection
+      await firestore.collection('orders').add({
+        'unifiedProductId': _selectedUnifiedProductId,
         'productName': _selectedProductName,
         'quantity': _quantitySold,
-        'platform': _selectedPlatform,
+        'salesPrice': _salesPrice,
+        'currency': _currency,
+        'platform': finalPlatform,
+        'notes': _notes,
         'saleDate': Timestamp.fromDate(_saleDate),
         'createdAt': FieldValue.serverTimestamp(),
       });
       
-      // 2. Update the product stock (decrement by quantity sold)
-      // COMMENT: This modifies the existing product document.
-      final productRef = firestore.collection('products').doc(_selectedProductId);
+      // Update product stock
+      final productRef = firestore.collection('unified_products').doc(_selectedUnifiedProductId);
       await productRef.update({
-        'currentStock': FieldValue.increment(-_quantitySold),
+        'totalStock': FieldValue.increment(-_quantitySold),
       });
       
       _showSnackBar('Sale recorded successfully!', isError: false);
@@ -148,12 +261,20 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
   void _resetForm() {
     _formKey.currentState?.reset();
     setState(() {
-      _selectedProductId = null;
+      _selectedUnifiedProductId = null;
       _selectedProductName = null;
+      _selectedBrand = null;
       _quantitySold = 1;
+      _salesPrice = 0;
+      _currency = 'USD';
       _selectedPlatform = 'Trendyol';
+      _otherPlatform = '';
+      _showOtherPlatformField = false;
+      _notes = '';
       _saleDate = DateTime.now();
-      _currentStock = 0;
+      _currentTotalStock = 0;
+      _otherPlatformController.clear();
+      _notesController.clear();
       _updateDateController();
     });
   }
@@ -164,6 +285,7 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
       SnackBar(
         content: Text(message),
         backgroundColor: isError ? Colors.redAccent : Colors.green,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -202,7 +324,6 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-     
                     children: [
                       // ---------- Product Dropdown ----------
                       Card(
@@ -213,33 +334,64 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedProductId,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Select Product',
-                              labelStyle: TextStyle(color: Colors.white70),
-                              border: InputBorder.none,
-                            ),
-                            dropdownColor: const Color(0xFF283240),
-                            style: const TextStyle(color: Colors.white),
-                            items: _products.map((doc) {
-                              final name = doc['name'] ?? 'Unnamed';
-                              final stock = doc['currentStock'] ?? 0;
-                              return DropdownMenuItem<String>(
-                                value: doc.id,
-                                child: Text('$name (Stock: $stock)'),
-                              );
-                            }).toList(),
-                            onChanged: _onProductSelected,
-                            validator: (value) =>
-                                value == null ? 'Please select a product' : null,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              DropdownButtonFormField<String>(
+                                value: _selectedUnifiedProductId,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Select Product',
+                                  labelStyle: TextStyle(color: Colors.white70),
+                                  border: InputBorder.none,
+                                ),
+                                dropdownColor: const Color(0xFF283240),
+                                style: const TextStyle(color: Colors.white),
+                                items: _products.map((doc) {
+                                  final name = doc['name'] ?? 'Unnamed';
+                                  final brand = doc['brand'] ?? '';
+                                  final stock = doc['totalStock'] ?? 0;
+                                  final displayText = brand.isNotEmpty 
+                                      ? '$name ($brand) - Stock: $stock'
+                                      : '$name - Stock: $stock';
+                                  return DropdownMenuItem<String>(
+                                    value: doc.id,
+                                    child: Text(displayText),
+                                  );
+                                }).toList(),
+                                onChanged: _onProductSelected,
+                                validator: (value) =>
+                                    value == null ? 'Please select a product' : null,
+                              ),
+                              if (_selectedBrand != null && _selectedBrand!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    'Brand: $_selectedBrand',
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              if (_selectedPlatformsList != null && _selectedPlatformsList!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    'Available on: $_selectedPlatformsList',
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // ---------- Quantity Sold (Text field) ----------
+                      // ---------- Quantity Sold ----------
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
@@ -271,11 +423,84 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                               if (qty == null || qty < 1) {
                                 return 'Must be a positive number';
                               }
-                              if (_selectedProductId != null && qty > _currentStock) {
-                                return 'Not enough stock (max $_currentStock)';
+                              if (_selectedUnifiedProductId != null && qty > _currentTotalStock) {
+                                return 'Not enough stock (max $_currentTotalStock)';
                               }
                               return null;
                             },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ---------- Sales Price ----------
+                      Card(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: TextFormField(
+                            initialValue: _salesPrice == 0 ? '' : _salesPrice.toString(),
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(
+                              labelText: 'Sales Price',
+                              labelStyle: TextStyle(color: Colors.white70),
+                              hintText: 'Enter price amount',
+                              hintStyle: TextStyle(color: Colors.white38),
+                              border: UnderlineInputBorder(),
+                            ),
+                            onChanged: (value) {
+                              final parsed = int.tryParse(value);
+                              if (parsed != null && parsed >= 0) {
+                                setState(() => _salesPrice = parsed);
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter sales price';
+                              }
+                              final price = int.tryParse(value);
+                              if (price == null || price < 0) {
+                                return 'Please enter a valid price';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ---------- Currency Dropdown ----------
+                      Card(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: DropdownButtonFormField<String>(
+                            value: _currency,
+                            items: _currencies.map((currency) {
+                              return DropdownMenuItem<String>(
+                                value: currency,
+                                child: Text(currency,
+                                    style: const TextStyle(color: Colors.white)),
+                              );
+                            }).toList(),
+                            onChanged: (val) =>
+                                setState(() => _currency = val!),
+                            decoration: const InputDecoration(
+                              labelText: 'Currency',
+                              labelStyle: TextStyle(color: Colors.white70),
+                              border: InputBorder.none,
+                            ),
+                            dropdownColor: const Color(0xFF283240),
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ),
@@ -290,30 +515,85 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedPlatform,
-                            items: _platforms.map((platform) {
-                              return DropdownMenuItem<String>(
-                                value: platform,
-                                child: Text(platform,
-                                    style: const TextStyle(color: Colors.white)),
-                              );
-                            }).toList(),
-                            onChanged: (val) =>
-                                setState(() => _selectedPlatform = val!),
-                            decoration: const InputDecoration(
-                              labelText: 'Sales Platform',
-                              labelStyle: TextStyle(color: Colors.white70),
-                              border: InputBorder.none,
-                            ),
-                            dropdownColor: const Color(0xFF283240),
-                            style: const TextStyle(color: Colors.white),
+                          child: Column(
+                            children: [
+                              DropdownButtonFormField<String>(
+                                value: _selectedPlatform,
+                                items: _platforms.map((platform) {
+                                  return DropdownMenuItem<String>(
+                                    value: platform,
+                                    child: Text(platform,
+                                        style: const TextStyle(color: Colors.white)),
+                                  );
+                                }).toList(),
+                                onChanged: _onPlatformChanged,
+                                decoration: const InputDecoration(
+                                  labelText: 'Sales Platform',
+                                  labelStyle: TextStyle(color: Colors.white70),
+                                  border: InputBorder.none,
+                                ),
+                                dropdownColor: const Color(0xFF283240),
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              if (_showOtherPlatformField)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 16.0),
+                                  child: TextFormField(
+                                    controller: _otherPlatformController,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Specify Platform',
+                                      labelStyle: TextStyle(color: Colors.white70),
+                                      hintText: 'e.g., Shopify, WooCommerce, etc.',
+                                      hintStyle: TextStyle(color: Colors.white38),
+                                      border: UnderlineInputBorder(),
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() => _otherPlatform = value);
+                                    },
+                                    validator: (value) {
+                                      if (_showOtherPlatformField && (value == null || value.isEmpty)) {
+                                        return 'Please specify the platform';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // ---------- Date Picker (Text field with onTap) ----------
+                      // ---------- Notes ----------
+                      Card(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: TextFormField(
+                            controller: _notesController,
+                            style: const TextStyle(color: Colors.white),
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Notes (Optional)',
+                              labelStyle: TextStyle(color: Colors.white70),
+                              hintText: 'Additional order details, customer info, etc.',
+                              hintStyle: TextStyle(color: Colors.white38),
+                              border: UnderlineInputBorder(),
+                            ),
+                            onChanged: (value) {
+                              setState(() => _notes = value);
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ---------- Date Picker ----------
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
@@ -339,7 +619,7 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
 
                       // ---------- Submit Button ----------
                       ElevatedButton.icon(
@@ -361,6 +641,43 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                       ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // ---------- IMPORT BUTTON (Admin Only - Remove after use) ----------
+                       OutlinedButton.icon(
+                         onPressed: _isImporting ? null : _importProductsFromJson,
+                         icon: _isImporting
+                             ? const SizedBox(
+                                 width: 18,
+                                 height: 18,
+                                 child: CircularProgressIndicator(
+                                   strokeWidth: 2,
+                                 ),
+                               )
+                             : const Icon(Icons.file_upload),
+                         label: Text(_isImporting ? 'Importing...' : 'Import Test Products (JSON)'),
+                         style: OutlinedButton.styleFrom(
+                           foregroundColor: Colors.orange,
+                           side: const BorderSide(color: Colors.orange),
+                           padding: const EdgeInsets.symmetric(vertical: 12),
+                         ),
+                       ),
+                      
+                      const SizedBox(height: 8),
+                      
+                      // Info text
+                      if (_products.isEmpty)
+                        const Center(
+                          child: Text(
+                            'No products found. Use the button above to import test products.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                     ],
                   ),
                 ),
