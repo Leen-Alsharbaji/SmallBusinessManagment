@@ -338,7 +338,7 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               DropdownButtonFormField<String>(
-                                value: _selectedUnifiedProductId,
+                                initialValue: _selectedUnifiedProductId,
                                 isExpanded: true,
                                 decoration: const InputDecoration(
                                   labelText: 'Select Product',
@@ -484,7 +484,7 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: DropdownButtonFormField<String>(
-                            value: _currency,
+                            initialValue: _currency,
                             items: _currencies.map((currency) {
                               return DropdownMenuItem<String>(
                                 value: currency,
@@ -518,7 +518,7 @@ class _SalesEntryFormState extends State<SalesEntryForm> {
                           child: Column(
                             children: [
                               DropdownButtonFormField<String>(
-                                value: _selectedPlatform,
+                                initialValue: _selectedPlatform,
                                 items: _platforms.map((platform) {
                                   return DropdownMenuItem<String>(
                                     value: platform,

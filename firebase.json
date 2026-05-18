@@ -1,22 +1,5 @@
 {
-  "flutter": {
-    "platforms": {
-      "dart": {
-        "lib/firebase_options.dart": {
-          "projectId": "smallbunsinessmanagment",
-          "configurations": {
-            "web": "1:628467448602:web:4bca615e550162b7ab8aa3"
-          }
-        }
-      }
-    }
-  },
-  "emulators": {
-    "dataconnect": {
-      "dataDir": "dataconnect/.dataconnect/pgliteData"
-    }
-  },
-  "dataconnect": {
-    "source": "dataconnect"
+  "auth": {
+    "providers": {}
   }
 }

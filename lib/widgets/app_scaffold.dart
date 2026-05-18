@@ -75,6 +75,17 @@ class _AppScaffoldState extends State<AppScaffold> {
           onTap: () => Navigator.pushReplacementNamed(context, '/manual-sale-entry-form'),
         ),
 
+         ListTile(
+          leading: const Icon(Icons.inventory),
+          title: const Text('Manual Stock Update'),
+          onTap: () => Navigator.pushReplacementNamed(context, '/manual-product-stock-update-form'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.inventory),
+          title: const Text('Manual New Product Entry'),
+          onTap: () => Navigator.pushReplacementNamed(context, '/manual-new-product-entry-form'),
+        ),
+      
       ],
     );
 

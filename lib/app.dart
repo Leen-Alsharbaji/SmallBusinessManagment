@@ -20,7 +20,7 @@ import 'screens/home.dart';
 import 'screens/profile.dart';
 import 'screens/Product_stock_view.dart';
 import 'screens/manual_new_product_entry_form.dart';
-import 'screens/dashboard_analytics.dart';
+//import 'screens/dashboard_analytics.dart';
 import 'screens/manual_sale_entry _form.dart';
 import 'screens/manual_prodct_stock_update_form.dart';
 
@@ -39,7 +39,10 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/product-stock': (context) => const ProductStockViewScreen(),
         '/manual-sale-entry-form': (context) => const SalesEntryForm(),
-      },
+        '/manual-new-product-entry-form': (context) => const ManualProductEntryForm(),
+        '/manual-product-stock-update-form': (context) => const ManualStockAdjustmentForm()
+       
+     },
       
     );
   }
