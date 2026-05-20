@@ -46,3 +46,9 @@ app.*.map.json
 
 
 lib/firebase_options.dart
+
+#python virtual environment
+venv/
+
+backend/service-account.json
+/.env
