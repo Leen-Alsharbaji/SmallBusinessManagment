@@ -1,21 +1,67 @@
 /*
   product_stock_view.dart
-
-  What this file does:
-  - Provides a screen for viewing and managing product stock levels.
-  - Fetches products from the unified_products collection in Firestore.
-  - Displays products in a responsive grid with real data.
-  - Shows product image, name, stock count, brand, and price.
+  - Displays products in a responsive grid
+  - Now shows error messages and debugging info
 */
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:responsive_grid_list/responsive_grid_list.dart';
 import 'package:small_business_managment/widgets/product_card.dart';
 import 'package:small_business_managment/widgets/app_scaffold.dart';
+import 'package:small_business_managment/services/product_api_service.dart';
+import 'package:small_business_managment/data/product_repository.dart';
 
-class ProductStockViewScreen extends StatelessWidget {
+class ProductStockViewScreen extends StatefulWidget {
   const ProductStockViewScreen({super.key});
+
+  @override
+  State<ProductStockViewScreen> createState() => _ProductStockViewScreenState();
+}
+
+class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
+  late ProductRepository _repo;
+  List<Map<String, dynamic>> _products = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  final String _apiBaseUrl = 'http://127.0.0.1:8000 ';   // <-- CHANGE THIS
+
+  @override
+  void initState() {
+    super.initState();
+    final api = ProductApiService(baseUrl: _apiBaseUrl);
+    _repo = ProductRepository(apiService: api);
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final products = await _repo.fetchProducts();
+      print('Loaded ${products.length} products');  // Debug log
+      if (mounted) {
+        setState(() {
+          _products = products;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print(' Error loading products: $e');  // Debug log
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refresh() async {
+    await _loadProducts();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,122 +69,110 @@ class ProductStockViewScreen extends StatelessWidget {
       title: 'Product Stock',
       body: Container(
         color: const Color(0xFF283240),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('unified_products')
-              .orderBy('name')
-              .snapshots(),
-          builder: (context, snapshot) {
-            // Handle loading state
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              );
-            }
+        child: _buildBody(),
+      ),
+    );
+  }
 
-            // Handle error state
-            if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.white70,
-                      size: 60,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading products: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Refresh by rebuilding the stream
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Handle empty state
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.inventory_2_outlined,
-                      color: Colors.white70,
-                      size: 60,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No products found',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Add products using the sales entry form or import them',
-                      style: TextStyle(color: Colors.white54),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // Navigate to sales entry form to add products
-                        Navigator.pushNamed(context, '/sales-entry');
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Products'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            // Display products in grid
-            final products = snapshot.data!.docs;
-            
-            return Padding(
-              padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
-              child: ResponsiveGridList(
-                horizontalGridMargin: 16,
-                verticalGridMargin: 16,
-                minItemWidth: 280,
-                maxItemsPerRow: 4,
-                children: products.map((doc) {
-                  final productData = doc.data() as Map<String, dynamic>;
-                  return ProductCard(
-                    productId: doc.id,
-                    name: productData['name'] ?? 'Unnamed Product',
-                    brand: productData['brand'] ?? '',
-                    price: (productData['price'] ?? 0).toDouble(),
-                    stock: productData['totalStock'] ?? 0,
-                    imageUrl: productData['primaryImageUrl'] ?? '',
-                    platforms: List<String>.from(productData['platforms'] ?? []),
-                    isManuallyReviewed: productData['isManuallyReviewed'] ?? false,
-                    matchingConfidence: productData['matchingConfidence'] ?? 'N/A',
-                  );
-                }).toList(),
-              ),
-            );
-          },
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white70, size: 60),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading products',
+              style: const TextStyle(color: Colors.white70, fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.white54, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadProducts,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_products.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.inventory_2_outlined, color: Colors.white70, size: 60),
+            const SizedBox(height: 16),
+            const Text(
+              'No products found',
+              style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Add products using the manual entry form',
+              style: TextStyle(color: Colors.white54),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/manual-product-entry'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Product'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Products exist – show grid
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView(
+        padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
+        children: [
+          ResponsiveGridList(
+            horizontalGridMargin: 16,
+            verticalGridMargin: 16,
+            minItemWidth: 280,
+            maxItemsPerRow: 4,
+            children: _products.map((productData) {
+              return ProductCard(
+                productId: productData['id']?.toString() ?? '',
+                name: productData['name'] ?? 'Unnamed Product',
+                brand: productData['brand'] ?? '',
+                price: (productData['price'] ?? 0).toDouble(),
+                stock: productData['totalStock'] ?? 0,
+                imageUrl: productData['primaryImageUrl'] ?? '',
+                platforms: List<String>.from(productData['platforms'] ?? []),
+                isManuallyReviewed: productData['isManuallyReviewed'] ?? false,
+                matchingConfidence: productData['matchingConfidence'] ?? 'N/A',
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

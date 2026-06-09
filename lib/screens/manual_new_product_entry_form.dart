@@ -1,18 +1,7 @@
-/*
-  manual_product_entry_form.dart
-
-  What this file does:
-  - Provides a form to manually enter new product details.
-  - Allows users to add products to inventory that may not be automatically imported.
-  - Includes fields for product name, brand, category, description, price, stock, SKU, platforms, and image URL.
-  - Saves the product to Firestore 'unified_products' collection.
-  - Includes manual review flag and matching confidence for product verification.
-  - Allows users to input custom platform when "Other" is selected from dropdown.
-  - Displays success/error messages.
-*/
-
+// manual_product_entry_form.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:small_business_managment/services/product_api_service.dart';
+import 'package:small_business_managment/data/product_repository.dart';
 import 'package:small_business_managment/widgets/app_scaffold.dart';
 
 class ManualProductEntryForm extends StatefulWidget {
@@ -23,10 +12,10 @@ class ManualProductEntryForm extends StatefulWidget {
 }
 
 class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
-  // -------------------- Form Key --------------------
   final _formKey = GlobalKey<FormState>();
-  
-  // -------------------- Controllers --------------------
+  late final ProductRepository _productRepository;
+
+  // Controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _brandController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
@@ -36,44 +25,38 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
   final TextEditingController _skuController = TextEditingController();
   final TextEditingController _primaryImageUrlController = TextEditingController();
   final TextEditingController _customPlatformController = TextEditingController();
-  
-  // -------------------- Dropdown/Selection Values --------------------
+
+  // Selection state
   String _selectedPlatform = 'Trendyol';
   final List<String> _selectedPlatforms = [];
   bool _showCustomPlatformField = false;
   String _customPlatform = '';
-  
   String _selectedMatchingConfidence = 'high';
   bool _isManuallyReviewed = true;
-  
-  // -------------------- Available Options --------------------
-  final List<String> _availablePlatforms = [
-    'Trendyol',
-    'Amazon',
-    'eBay',
-    'Etsy',
-    'Hepsiburada',
-    'Shopify',
-    'WooCommerce',
-    'Other',
-  ];
-  
-  final List<String> _confidenceLevels = ['high', 'medium', 'low'];
-  
-  final List<String> _categories = [
-    'Hair Care',
-    'Skincare',
-    'Makeup',
-    'Fragrance',
-    'Body Care',
-    'Men\'s Grooming',
-    'Baby Care',
-    'Natural Products',
-    'Other',
-  ];
-  
-  // -------------------- UI State --------------------
+
+  // UI state
   bool _isLoading = false;
+
+  // Constants
+  final List<String> _availablePlatforms = [
+    'Trendyol', 'Amazon', 'eBay', 'Etsy', 'Hepsiburada', 'Shopify', 'WooCommerce', 'Other',
+  ];
+  final List<String> _confidenceLevels = ['high', 'medium', 'low'];
+  final List<String> _categories = [
+    'Hair Care', 'Skincare', 'Makeup', 'Fragrance', 'Body Care',
+    'Men\'s Grooming', 'Baby Care', 'Natural Products', 'Other',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the repository with the API service
+    // For Android emulator use 10.0.2.2, for iOS simulator localhost, for real device use your PC's IP
+    final apiService = ProductApiService(
+      baseUrl: 'http://127.0.0.1:8000 ', // Change this to your FastAPI server address
+    );
+    _productRepository = ProductRepository(apiService: apiService);
+  }
 
   @override
   void dispose() {
@@ -89,9 +72,6 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
     super.dispose();
   }
 
-  // -------------------- Helper Methods --------------------
-  
-  /// Called when platform dropdown changes
   void _onPlatformChanged(String? platform) {
     if (platform == null) return;
     setState(() {
@@ -103,12 +83,9 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
       }
     });
   }
-  
-  /// Adds a platform to the selected platforms list
+
   void _addPlatform() {
     String platformToAdd;
-    
-    // Check if "Other" is selected and get custom platform name
     if (_selectedPlatform == 'Other') {
       if (_customPlatform.trim().isEmpty) {
         _showSnackBar('Please enter a custom platform name');
@@ -118,31 +95,25 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
     } else {
       platformToAdd = _selectedPlatform;
     }
-    
-    // Check if platform already exists
+
     if (_selectedPlatforms.contains(platformToAdd)) {
       _showSnackBar('Platform already added');
       return;
     }
-    
+
     setState(() {
       _selectedPlatforms.add(platformToAdd);
-      // Reset the selection
       _selectedPlatform = 'Trendyol';
       _customPlatform = '';
       _showCustomPlatformField = false;
       _customPlatformController.clear();
     });
   }
-  
-  /// Removes a platform from the selected platforms list
+
   void _removePlatform(String platform) {
-    setState(() {
-      _selectedPlatforms.remove(platform);
-    });
+    setState(() => _selectedPlatforms.remove(platform));
   }
-  
-  /// Shows snackbar message
+
   void _showSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -152,64 +123,47 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
       ),
     );
   }
-  
-  /// Submits the product to Firestore
+
   Future<void> _submitProduct() async {
     // Validate form
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Validate platforms
     if (_selectedPlatforms.isEmpty) {
       _showSnackBar('Please add at least one sales platform');
       return;
     }
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
-      final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      
-      // Prepare product data
-      final Map<String, dynamic> productData = {
-        'name': _nameController.text.trim(),
-        'brand': _brandController.text.trim(),
-        'category': _categoryController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'price': double.parse(_priceController.text),
-        'totalStock': int.parse(_totalStockController.text),
-        'platforms': _selectedPlatforms,
-        'isManuallyReviewed': _isManuallyReviewed,
-        'matchingConfidence': _selectedMatchingConfidence,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-      
-      // Add optional fields if provided
-      if (_skuController.text.trim().isNotEmpty) {
-        productData['matchedProductid'] = _skuController.text.trim();
-      }
-      
-      if (_primaryImageUrlController.text.trim().isNotEmpty) {
-        productData['primaryImageUrl'] = _primaryImageUrlController.text.trim();
-      }
-      
-      // Save to Firestore
-      await firestore.collection('unified_products').add(productData);
-      
-      // Show success message
+      // Prepare product data using the repository
+      final productData = _productRepository.prepareProductData(
+        name: _nameController.text.trim(),
+        brand: _brandController.text.trim(),
+        category: _categoryController.text.trim(),
+        description: _descriptionController.text.trim(),
+        price: double.parse(_priceController.text),
+        totalStock: int.parse(_totalStockController.text),
+        platforms: _selectedPlatforms,
+        isManuallyReviewed: _isManuallyReviewed,
+        matchingConfidence: _selectedMatchingConfidence,
+        sku: _skuController.text.trim(),
+        primaryImageUrl: _primaryImageUrlController.text.trim(),
+      );
+
+      // Send to backend via API
+      await _productRepository.addProduct(productData);
+
       _showSnackBar('Product added successfully!', isError: false);
-      
-      // Reset form
       _resetForm();
-      
     } catch (e) {
       _showSnackBar('Error adding product: $e');
     } finally {
       setState(() => _isLoading = false);
     }
   }
-  
-  /// Resets all form fields
+
   void _resetForm() {
     _formKey.currentState?.reset();
     setState(() {
@@ -231,7 +185,6 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
     });
   }
 
-  // -------------------- UI Build --------------------
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
@@ -245,13 +198,11 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ---------- Product Name ----------
+                // Product Name
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextFormField(
@@ -264,24 +215,17 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                         hintStyle: TextStyle(color: Colors.white38),
                         border: UnderlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter product name';
-                        }
-                        return null;
-                      },
+                      validator: (value) => value == null || value.isEmpty ? 'Please enter product name' : null,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Brand Name ----------
+
+                // Brand Name
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextFormField(
@@ -294,28 +238,21 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                         hintStyle: TextStyle(color: Colors.white38),
                         border: UnderlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter brand name';
-                        }
-                        return null;
-                      },
+                      validator: (value) => value == null || value.isEmpty ? 'Please enter brand name' : null,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Category Dropdown ----------
+
+                // Category Dropdown
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: DropdownButtonFormField<String>(
-                      initialValue: _categoryController.text.isEmpty ? null : _categoryController.text,
+                      value: _categoryController.text.isEmpty ? null : _categoryController.text,
                       items: _categories.map((category) {
                         return DropdownMenuItem<String>(
                           value: category,
@@ -334,24 +271,17 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                       ),
                       dropdownColor: const Color(0xFF283240),
                       style: const TextStyle(color: Colors.white),
-                      validator: (value) {
-                        if (_categoryController.text.isEmpty) {
-                          return 'Please select a category';
-                        }
-                        return null;
-                      },
+                      validator: (value) => _categoryController.text.isEmpty ? 'Please select a category' : null,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Description ----------
+
+                // Description
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextFormField(
@@ -365,27 +295,20 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                         hintStyle: TextStyle(color: Colors.white38),
                         border: UnderlineInputBorder(),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter product description';
-                        }
-                        return null;
-                      },
+                      validator: (value) => value == null || value.isEmpty ? 'Please enter product description' : null,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Price & Stock Row ----------
+
+                // Price & Stock Row
                 Row(
                   children: [
                     Expanded(
                       child: Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextFormField(
@@ -401,15 +324,10 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                               prefixText: '\$ ',
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter price';
-                              }
-                              if (double.tryParse(value) == null) {
-                                return 'Please enter valid price';
-                              }
-                              if (double.parse(value) < 0) {
-                                return 'Price cannot be negative';
-                              }
+                              if (value == null || value.isEmpty) return 'Please enter price';
+                              final price = double.tryParse(value);
+                              if (price == null) return 'Please enter valid price';
+                              if (price < 0) return 'Price cannot be negative';
                               return null;
                             },
                           ),
@@ -421,9 +339,7 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                       child: Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextFormField(
@@ -438,16 +354,10 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                               border: UnderlineInputBorder(),
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter stock quantity';
-                              }
+                              if (value == null || value.isEmpty) return 'Please enter stock quantity';
                               final stock = int.tryParse(value);
-                              if (stock == null) {
-                                return 'Please enter valid number';
-                              }
-                              if (stock < 0) {
-                                return 'Stock cannot be negative';
-                              }
+                              if (stock == null) return 'Please enter valid number';
+                              if (stock < 0) return 'Stock cannot be negative';
                               return null;
                             },
                           ),
@@ -457,14 +367,12 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- SKU (Optional) ----------
+
+                // SKU (Optional)
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextFormField(
@@ -481,26 +389,19 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Platforms Selection ----------
+
+                // Platforms Selection
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Sales Platforms *',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
+                        const Text('Sales Platforms *', style: TextStyle(color: Colors.white70, fontSize: 14)),
                         const SizedBox(height: 8),
-                        
-                        // Selected platforms chips
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -514,23 +415,16 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                             );
                           }).toList(),
                         ),
-                        
                         if (_selectedPlatforms.isEmpty)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              'No platforms added yet',
-                              style: TextStyle(color: Colors.white54, fontSize: 12),
-                            ),
+                            child: Text('No platforms added yet', style: TextStyle(color: Colors.white54, fontSize: 12)),
                           ),
-                        
                         const SizedBox(height: 16),
                         const Divider(color: Colors.white24),
                         const SizedBox(height: 16),
-                        
-                        // Platform dropdown
                         DropdownButtonFormField<String>(
-                          initialValue: _selectedPlatform,
+                          value: _selectedPlatform,
                           items: _availablePlatforms.map((platform) {
                             return DropdownMenuItem<String>(
                               value: platform,
@@ -546,8 +440,6 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                           dropdownColor: const Color(0xFF283240),
                           style: const TextStyle(color: Colors.white),
                         ),
-                        
-                        // Custom platform input field (shown when "Other" is selected)
                         if (_showCustomPlatformField)
                           Padding(
                             padding: const EdgeInsets.only(top: 16.0),
@@ -561,23 +453,10 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                                 hintStyle: TextStyle(color: Colors.white38),
                                 border: UnderlineInputBorder(),
                               ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _customPlatform = value;
-                                });
-                              },
-                              validator: (value) {
-                                if (_showCustomPlatformField && (value == null || value.isEmpty)) {
-                                  return 'Please enter a platform name';
-                                }
-                                return null;
-                              },
+                              onChanged: (value) => setState(() => _customPlatform = value),
                             ),
                           ),
-                        
                         const SizedBox(height: 16),
-                        
-                        // Add platform button
                         ElevatedButton.icon(
                           onPressed: _addPlatform,
                           icon: const Icon(Icons.add),
@@ -592,14 +471,12 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Image URL (Optional) ----------
+
+                // Image URL (Optional)
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: TextFormField(
@@ -616,57 +493,38 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
-                // ---------- Manual Review & Confidence ----------
+
+                // Manual Review & Confidence
                 Card(
                   color: Colors.white.withValues(alpha: 0.1),
                   elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
-                        // Manual Review Switch
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Manually Reviewed',
-                              style: TextStyle(color: Colors.white70),
-                            ),
+                            const Text('Manually Reviewed', style: TextStyle(color: Colors.white70)),
                             Switch(
                               value: _isManuallyReviewed,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isManuallyReviewed = value;
-                                });
-                              },
+                              onChanged: (value) => setState(() => _isManuallyReviewed = value),
                               activeThumbColor: Colors.teal,
                             ),
                           ],
                         ),
                         const Divider(color: Colors.white24),
                         const SizedBox(height: 8),
-                        
-                        // Matching Confidence Dropdown
                         DropdownButtonFormField<String>(
-                          initialValue: _selectedMatchingConfidence,
+                          value: _selectedMatchingConfidence,
                           items: _confidenceLevels.map((level) {
                             return DropdownMenuItem<String>(
                               value: level,
-                              child: Text(
-                                level.toUpperCase(),
-                                style: const TextStyle(color: Colors.white),
-                              ),
+                              child: Text(level.toUpperCase(), style: const TextStyle(color: Colors.white)),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedMatchingConfidence = value!;
-                            });
-                          },
+                          onChanged: (value) => setState(() => _selectedMatchingConfidence = value!),
                           decoration: const InputDecoration(
                             labelText: 'Matching Confidence',
                             labelStyle: TextStyle(color: Colors.white70),
@@ -680,19 +538,12 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
-                // ---------- Submit Button ----------
+
+                // Submit Button
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _submitProduct,
                   icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.add),
                   label: Text(_isLoading ? 'Adding Product...' : 'Add Product'),
                   style: ElevatedButton.styleFrom(
@@ -701,17 +552,11 @@ class _ManualProductEntryFormState extends State<ManualProductEntryForm> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
-                
                 const SizedBox(height: 16),
-                
-                // Info text
                 const Center(
                   child: Text(
                     'All fields marked with * are required\nSelect "Other" from dropdown to add custom platforms',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 ),

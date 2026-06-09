@@ -1,67 +1,51 @@
-/* what this file does:
-  provides a form for manually updating product stock levels. This allows users to adjust 
-  inventory counts for products that may have been sold or received outside of connected marketplaces,
-   ensuring that the app's inventory data remains accurate and up-to-date. 
-   The form can include fields for selecting a product, entering the new stock quantity, 
-   and optionally providing a reason for the adjustment 
-   (e.g., "Sold in-store", "Received new shipment", "Inventory correction"). 
-   This functionality is essential for maintaining accurate inventory records and providing 
-   reliable insights to the user.
- */
-
-/*
-  manual_stock_adjustment_form.dart
-
-  What this file does:
-  - Provides a form for manually updating product stock levels.
-  - Allows users to adjust inventory counts for products sold or received outside of connected marketplaces.
-  - Includes fields for selecting a product, entering stock adjustment quantity, and providing a reason.
-  - Supports both increasing (add stock) and decreasing (remove stock) operations.
-  - Saves stock adjustment records to Firestore and updates product stock levels.
-  - Tracks adjustment history for auditing purposes.
-  - Displays success/error messages.
-*/
-
+// manual_stock_adjustment_form.dart (optimized)
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:small_business_managment/data/product_repository.dart';
+import 'package:small_business_managment/data/stock_repository.dart';
+import 'package:small_business_managment/services/product_api_service.dart';
+import 'package:small_business_managment/services/stock_api_service.dart';
 import 'package:small_business_managment/widgets/app_scaffold.dart';
 
 class ManualStockAdjustmentForm extends StatefulWidget {
   const ManualStockAdjustmentForm({super.key});
 
   @override
-  State<ManualStockAdjustmentForm> createState() => _ManualStockAdjustmentFormState();
+  State<ManualStockAdjustmentForm> createState() =>
+      _ManualStockAdjustmentFormState();
 }
 
 class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
-  // -------------------- Form Key --------------------
   final _formKey = GlobalKey<FormState>();
-  
-  // -------------------- Data --------------------
-  List<QueryDocumentSnapshot> _products = [];
+  late ProductRepository _productRepository;
+  late StockAdjustmentRepository _stockRepository;
+  late Future<List<Map<String, dynamic>>> _productsFuture;
+
+  // Cache for products - static to persist across rebuilds
+  static List<Map<String, dynamic>> _cachedProducts = [];
+  static bool _isCacheValid = false;
+  static DateTime _lastFetch = DateTime.now();
+  static const Duration _cacheDuration = Duration(minutes: 5);
+
   String? _selectedProductId;
   String? _selectedProductName;
   int _currentStock = 0;
   int _adjustmentQuantity = 0;
-  String _adjustmentType = 'decrease'; // 'decrease' or 'increase'
+  String _adjustmentType = 'decrease';
   String _selectedReason = 'Sold in-store';
   String _customReason = '';
   bool _showCustomReasonField = false;
   String _notes = '';
   DateTime _adjustmentDate = DateTime.now();
-  
-  // -------------------- Controllers --------------------
+
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _customReasonController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
-  
-  // -------------------- UI State --------------------
-  bool _isLoading = false;
-  bool _isFetchingProducts = true;
-  
-  // -------------------- Lists --------------------
+
+  bool _isSubmitting = false;
+  bool _isRefreshing = false;
+
   final List<String> _adjustmentReasons = [
     'Sold in-store',
     'Received new shipment',
@@ -73,14 +57,23 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
     'Transferred to other location',
     'Other',
   ];
-  
+
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+    final apiBaseUrl = 'http://127.0.0.1:8000 '; // Change to your server
+
+    final productApi = ProductApiService(baseUrl: apiBaseUrl);
+    _productRepository = ProductRepository(apiService: productApi);
+
+    final stockApi = StockAdjustmentApiService(baseUrl: apiBaseUrl);
+    _stockRepository = StockAdjustmentRepository(apiService: stockApi);
+
     _updateDateController();
+    // Kick off product prefetch once to avoid repeated fetches on rebuild.
+    _productsFuture = _fetchProducts();
   }
-  
+
   @override
   void dispose() {
     _quantityController.dispose();
@@ -89,47 +82,68 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
     _dateController.dispose();
     super.dispose();
   }
-  
-  // -------------------- Firestore Methods --------------------
-  
-  /// Fetches products from Firestore 'unified_products' collection
-  Future<void> _fetchProducts() async {
-    setState(() => _isFetchingProducts = true);
+
+  // Check if cache is still valid
+  bool _isCacheValidAndNotEmpty() {
+    return _isCacheValid && 
+           _cachedProducts.isNotEmpty && 
+           DateTime.now().difference(_lastFetch) < _cacheDuration;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchProducts({bool forceRefresh = false}) async {
+    if (!forceRefresh && _isCacheValidAndNotEmpty()) {
+      return _cachedProducts;
+    }
+
     try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('unified_products')
-          .orderBy('name')
-          .get();
-      setState(() {
-        _products = snapshot.docs;
-        _isFetchingProducts = false;
-      });
+      final products = await _productRepository.fetchProducts();
+      _cachedProducts = products;
+      _isCacheValid = true;
+      _lastFetch = DateTime.now();
+      return products;
     } catch (e) {
-      setState(() => _isFetchingProducts = false);
-      _showSnackBar('Failed to load products: $e');
+      if (_cachedProducts.isNotEmpty) {
+        return _cachedProducts;
+      }
+      rethrow;
     }
   }
-  
-  /// Called when a product is selected
+
+  // Manual refresh
+  Future<void> _refreshProducts() async {
+    setState(() => _isRefreshing = true);
+    try {
+      _productsFuture = _fetchProducts(forceRefresh: true);
+      await _productsFuture;
+      if (_selectedProductId != null && 
+          !_cachedProducts.any((p) => p['id'] == _selectedProductId)) {
+        _selectedProductId = null;
+        _selectedProductName = null;
+        _currentStock = 0;
+      }
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) _showSnackBar('Failed to refresh: $e');
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
+  }
+
   void _onProductSelected(String? productId) {
     if (productId == null) return;
-    final productDoc = _products.firstWhere((doc) => doc.id == productId);
+    final product = _cachedProducts.firstWhere((p) => p['id'] == productId);
     setState(() {
       _selectedProductId = productId;
-      _selectedProductName = productDoc['name'] ?? 'Unnamed';
-      _currentStock = productDoc['totalStock'] ?? 0;
+      _selectedProductName = product['name'] ?? 'Unnamed';
+      _currentStock = product['totalStock'] ?? 0;
     });
   }
-  
-  /// Called when adjustment type changes
+
   void _onAdjustmentTypeChanged(String? type) {
     if (type == null) return;
-    setState(() {
-      _adjustmentType = type;
-    });
+    setState(() => _adjustmentType = type);
   }
-  
-  /// Called when reason changes
+
   void _onReasonChanged(String? reason) {
     if (reason == null) return;
     setState(() {
@@ -141,18 +155,14 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
       }
     });
   }
-  
-  /// Updates product stock and saves adjustment record
+
   Future<void> _submitAdjustment() async {
-    // Validate form
     if (!_formKey.currentState!.validate()) return;
-    
     if (_selectedProductId == null) {
       _showSnackBar('Please select a product');
       return;
     }
-    
-    // Calculate new stock
+
     int newStock;
     if (_adjustmentType == 'decrease') {
       newStock = _currentStock - _adjustmentQuantity;
@@ -163,56 +173,44 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
     } else {
       newStock = _currentStock + _adjustmentQuantity;
     }
-    
-    setState(() => _isLoading = true);
-    
+
+    final String finalReason = _showCustomReasonField && _customReason.isNotEmpty
+        ? _customReason
+        : _selectedReason;
+
+    setState(() => _isSubmitting = true);
     try {
-      final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      
-      // Get final reason
-      final String finalReason = _showCustomReasonField && _customReason.isNotEmpty
-          ? _customReason
-          : _selectedReason;
-      
-      // Create stock adjustment record
-      await firestore.collection('stock_adjustments').add({
-        'productId': _selectedProductId,
-        'productName': _selectedProductName,
-        'adjustmentType': _adjustmentType, // 'increase' or 'decrease'
-        'quantity': _adjustmentQuantity,
-        'oldStock': _currentStock,
-        'newStock': newStock,
-        'reason': finalReason,
-        'notes': _notes,
-        'adjustmentDate': Timestamp.fromDate(_adjustmentDate),
-        'createdAt': FieldValue.serverTimestamp(),
-        'adjustedBy': 'Manual Entry', // Could be replaced with user ID if you have auth
-      });
-      
-      // Update product stock
-      final productRef = firestore.collection('unified_products').doc(_selectedProductId);
-      await productRef.update({
-        'totalStock': newStock,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      
+      await _stockRepository.adjustStock(
+        productId: _selectedProductId!,
+        productName: _selectedProductName!,
+        adjustmentType: _adjustmentType,
+        quantity: _adjustmentQuantity,
+        oldStock: _currentStock,
+        newStock: newStock,
+        reason: finalReason,
+        notes: _notes,
+        adjustmentDate: _adjustmentDate,
+      );
+
+      final productIndex = _cachedProducts.indexWhere((p) => p['id'] == _selectedProductId);
+      if (productIndex != -1) {
+        _cachedProducts[productIndex]['totalStock'] = newStock;
+      }
+      _currentStock = newStock;
+
       _showSnackBar(
         'Stock ${_adjustmentType == 'increase' ? 'increased' : 'decreased'} successfully!\n'
-        'Stock changed: $_currentStock → $newStock',
+        'Stock changed: ${_adjustmentType == 'decrease' ? _currentStock + _adjustmentQuantity : _currentStock - _adjustmentQuantity} → $newStock',
         isError: false,
       );
-      
       _resetForm();
-      await _fetchProducts(); // Refresh product list to show updated stock
-      
     } catch (e) {
       _showSnackBar('Error updating stock: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
-  
-  /// Resets all form fields
+
   void _resetForm() {
     _formKey.currentState?.reset();
     setState(() {
@@ -232,9 +230,7 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
       _updateDateController();
     });
   }
-  
-  // -------------------- Helper Methods --------------------
-  
+
   void _showSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -244,11 +240,11 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
       ),
     );
   }
-  
+
   void _updateDateController() {
     _dateController.text = DateFormat('dd.MM.yyyy').format(_adjustmentDate);
   }
-  
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -263,38 +259,78 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
       });
     }
   }
-  
-  // -------------------- UI Build --------------------
+
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Manual Stock Adjustment',
       body: Container(
         color: const Color(0xFF283240),
-        child: _isFetchingProducts
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+        child: RefreshIndicator(
+          onRefresh: _refreshProducts,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _productsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting && !_isRefreshing) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white70, size: 60),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Failed to load products: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => setState(() {}), // retrigger FutureBuilder
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No products found. Please add products first.',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                );
+              }
+
+              // Products loaded successfully
+              final products = snapshot.data!;
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16.0),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ---------- Product Selection ----------
+                      // Product Selection Dropdown
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               DropdownButtonFormField<String>(
-                                initialValue: _selectedProductId,
+                                value: _selectedProductId,
                                 isExpanded: true,
+                                hint: const Text(
+                                  'Select a product',
+                                  style: TextStyle(color: Colors.white54),
+                                ),
                                 decoration: const InputDecoration(
                                   labelText: 'Select Product *',
                                   labelStyle: TextStyle(color: Colors.white70),
@@ -302,21 +338,20 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                                 ),
                                 dropdownColor: const Color(0xFF283240),
                                 style: const TextStyle(color: Colors.white),
-                                items: _products.map((doc) {
-                                  final name = doc['name'] ?? 'Unnamed';
-                                  final brand = doc['brand'] ?? '';
-                                  final stock = doc['totalStock'] ?? 0;
-                                  final displayText = brand.isNotEmpty 
+                                items: products.map((product) {
+                                  final name = product['name'] ?? 'Unnamed';
+                                  final brand = product['brand'] ?? '';
+                                  final stock = product['totalStock'] ?? 0;
+                                  final displayText = brand.isNotEmpty
                                       ? '$name ($brand) - Stock: $stock'
                                       : '$name - Stock: $stock';
                                   return DropdownMenuItem<String>(
-                                    value: doc.id,
+                                    value: product['id'],
                                     child: Text(displayText),
                                   );
                                 }).toList(),
                                 onChanged: _onProductSelected,
-                                validator: (value) =>
-                                    value == null ? 'Please select a product' : null,
+                                validator: (value) => value == null ? 'Please select a product' : null,
                               ),
                               if (_selectedProductName != null)
                                 Padding(
@@ -335,23 +370,18 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // ---------- Adjustment Type Toggle ----------
+
+                      // Adjustment Type Toggle
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Adjustment Type *',
-                                style: TextStyle(color: Colors.white70),
-                              ),
+                              const Text('Adjustment Type *', style: TextStyle(color: Colors.white70)),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
@@ -360,16 +390,12 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                                       label: const Text('Decrease Stock'),
                                       selected: _adjustmentType == 'decrease',
                                       onSelected: (selected) {
-                                        if (selected) {
-                                          _onAdjustmentTypeChanged('decrease');
-                                        }
+                                        if (selected) _onAdjustmentTypeChanged('decrease');
                                       },
                                       selectedColor: Colors.redAccent,
                                       backgroundColor: Colors.white.withValues(alpha: 0.1),
                                       labelStyle: TextStyle(
-                                        color: _adjustmentType == 'decrease' 
-                                            ? Colors.white 
-                                            : Colors.white70,
+                                        color: _adjustmentType == 'decrease' ? Colors.white : Colors.white70,
                                       ),
                                     ),
                                   ),
@@ -379,16 +405,12 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                                       label: const Text('Increase Stock'),
                                       selected: _adjustmentType == 'increase',
                                       onSelected: (selected) {
-                                        if (selected) {
-                                          _onAdjustmentTypeChanged('increase');
-                                        }
+                                        if (selected) _onAdjustmentTypeChanged('increase');
                                       },
                                       selectedColor: Colors.green,
                                       backgroundColor: Colors.white.withValues(alpha: 0.1),
                                       labelStyle: TextStyle(
-                                        color: _adjustmentType == 'increase' 
-                                            ? Colors.white 
-                                            : Colors.white70,
+                                        color: _adjustmentType == 'increase' ? Colors.white : Colors.white70,
                                       ),
                                     ),
                                   ),
@@ -399,14 +421,12 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // ---------- Quantity ----------
+
+                      // Quantity Field
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextFormField(
@@ -414,8 +434,8 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                             keyboardType: TextInputType.number,
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
-                              labelText: _adjustmentType == 'decrease' 
-                                  ? 'Quantity to Remove *' 
+                              labelText: _adjustmentType == 'decrease'
+                                  ? 'Quantity to Remove *'
                                   : 'Quantity to Add *',
                               labelStyle: const TextStyle(color: Colors.white70),
                               hintText: 'Enter quantity',
@@ -426,24 +446,14 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                             ),
                             onChanged: (value) {
                               final parsed = int.tryParse(value);
-                              if (parsed != null && parsed > 0) {
-                                setState(() => _adjustmentQuantity = parsed);
-                              } else {
-                                setState(() => _adjustmentQuantity = 0);
-                              }
+                              setState(() => _adjustmentQuantity = (parsed != null && parsed > 0) ? parsed : 0);
                             },
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter quantity';
-                              }
+                              if (value == null || value.isEmpty) return 'Please enter quantity';
                               final qty = int.tryParse(value);
-                              if (qty == null || qty < 1) {
-                                return 'Must be a positive number';
-                              }
-                              if (_adjustmentType == 'decrease' && _selectedProductId != null) {
-                                if (qty > _currentStock) {
-                                  return 'Cannot remove more than current stock ($_currentStock)';
-                                }
+                              if (qty == null || qty < 1) return 'Must be a positive number';
+                              if (_adjustmentType == 'decrease' && _selectedProductId != null && qty > _currentStock) {
+                                return 'Cannot remove more than current stock ($_currentStock)';
                               }
                               return null;
                             },
@@ -451,27 +461,22 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // ---------- Reason Dropdown ----------
+
+                      // Reason Dropdown
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
                               DropdownButtonFormField<String>(
-                                initialValue: _selectedReason,
+                                value: _selectedReason,
                                 items: _adjustmentReasons.map((reason) {
                                   return DropdownMenuItem<String>(
                                     value: reason,
-                                    child: Text(
-                                      reason,
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
+                                    child: Text(reason, style: const TextStyle(color: Colors.white)),
                                   );
                                 }).toList(),
                                 onChanged: _onReasonChanged,
@@ -482,8 +487,7 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                                 ),
                                 dropdownColor: const Color(0xFF283240),
                                 style: const TextStyle(color: Colors.white),
-                                validator: (value) =>
-                                    value == null ? 'Please select a reason' : null,
+                                validator: (value) => value == null ? 'Please select a reason' : null,
                               ),
                               if (_showCustomReasonField)
                                 Padding(
@@ -498,9 +502,7 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                                       hintStyle: TextStyle(color: Colors.white38),
                                       border: UnderlineInputBorder(),
                                     ),
-                                    onChanged: (value) {
-                                      setState(() => _customReason = value);
-                                    },
+                                    onChanged: (value) => setState(() => _customReason = value),
                                     validator: (value) {
                                       if (_showCustomReasonField && (value == null || value.isEmpty)) {
                                         return 'Please specify the reason';
@@ -514,14 +516,12 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // ---------- Notes ----------
+
+                      // Notes
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextFormField(
@@ -535,21 +535,17 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                               hintStyle: TextStyle(color: Colors.white38),
                               border: UnderlineInputBorder(),
                             ),
-                            onChanged: (value) {
-                              setState(() => _notes = value);
-                            },
+                            onChanged: (value) => setState(() => _notes = value),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // ---------- Adjustment Date ----------
+
+                      // Adjustment Date
                       Card(
                         color: Colors.white.withValues(alpha: 0.1),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextFormField(
@@ -559,19 +555,17 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                             decoration: InputDecoration(
                               labelText: 'Adjustment Date',
                               labelStyle: const TextStyle(color: Colors.white70),
-                              suffixIcon: const Icon(Icons.calendar_today,
-                                  color: Colors.white70),
+                              suffixIcon: const Icon(Icons.calendar_today, color: Colors.white70),
                               border: const UnderlineInputBorder(),
                             ),
                             onTap: () => _selectDate(context),
-                            validator: (value) =>
-                                value == null || value.isEmpty ? 'Please select a date' : null,
+                            validator: (value) => value == null || value.isEmpty ? 'Please select a date' : null,
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
-                      // ---------- Preview & Submit ----------
+
+                      // Preview
                       if (_adjustmentQuantity > 0 && _selectedProductName != null)
                         Card(
                           color: Colors.teal.withValues(alpha: 0.1),
@@ -586,11 +580,7 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                               children: [
                                 const Text(
                                   'Adjustment Preview',
-                                  style: TextStyle(
-                                    color: Colors.teal,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
+                                  style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 14),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -604,50 +594,28 @@ class _ManualStockAdjustmentFormState extends State<ManualStockAdjustmentForm> {
                             ),
                           ),
                         ),
-                      
                       const SizedBox(height: 16),
-                      
-                      // ---------- Submit Button ----------
+
+                      // Submit Button
                       ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _submitAdjustment,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
+                        onPressed: _isSubmitting ? null : _submitAdjustment,
+                        icon: _isSubmitting
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.save),
-                        label: Text(_isLoading ? 'Updating Stock...' : 'Apply Adjustment'),
+                        label: Text(_isSubmitting ? 'Updating Stock...' : 'Apply Adjustment'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _adjustmentType == 'decrease' 
-                              ? Colors.redAccent 
-                              : Colors.green,
+                          backgroundColor: _adjustmentType == 'decrease' ? Colors.redAccent : Colors.green,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                       ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Info text
-                      if (_products.isEmpty)
-                        const Center(
-                          child: Text(
-                            'No products found. Please add products first.',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
                     ],
                   ),
                 ),
-              ),
+              );
+            },
+          ),
+        ),
       ),
     );
   }

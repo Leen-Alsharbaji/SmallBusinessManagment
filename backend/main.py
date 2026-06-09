@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import users_collection
 from marketplace_routes import router
+from product_routes import router as product_router
+from stock_routes import router as stock_router
 
 app = FastAPI()
 
@@ -15,7 +17,9 @@ app.add_middleware(
 
 # Include marketplace routes
 app.include_router(router, prefix="/api/auth")
-
+app.include_router(product_router, prefix="/api")
+app.include_router(stock_router, prefix="/api")
+app.include_router(product_router, prefix="/api")
 @app.get("/")
 def root():
     return {"message": "Smart Inventory Hub API"}
