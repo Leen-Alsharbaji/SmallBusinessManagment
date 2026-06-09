@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
-from database import products_collection  # Your Firestore products collection
+from database import products_collection  
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -79,4 +79,4 @@ async def get_products():
         data = doc.to_dict()
         data["id"] = doc.id
         products.append(data)
-    return products  # Returns a list of dictionaries
+    return products  

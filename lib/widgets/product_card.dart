@@ -41,9 +41,10 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
-      color: const Color(0xBFF2F2F2),
+  elevation: 8,
+  // use withOpacity instead of non-existent withValues
+  shadowColor: Colors.black.withOpacity(0.3),
+  color: const Color(0xBFF2F2F2),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -175,7 +176,7 @@ class ProductCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStockColor(stock).withValues(alpha: 0.2),
+                        color: _getStockColor(stock).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -214,8 +215,8 @@ class ProductCard extends StatelessWidget {
                           horizontal: 6,
                           vertical: 2,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
+                          decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
