@@ -1,7 +1,7 @@
 /*
   product_stock_view.dart
   - Displays products in a responsive grid
-  - Now shows error messages and debugging info
+ 
 */
 
 import 'package:flutter/material.dart';
@@ -10,6 +10,7 @@ import 'package:small_business_managment/widgets/product_card.dart';
 import 'package:small_business_managment/widgets/app_scaffold.dart';
 import 'package:small_business_managment/services/product_api_service.dart';
 import 'package:small_business_managment/data/product_repository.dart';
+import 'package:small_business_managment/core/config/app_config.dart';
 
 class ProductStockViewScreen extends StatefulWidget {
   const ProductStockViewScreen({super.key});
@@ -24,7 +25,8 @@ class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  final String _apiBaseUrl = 'http://127.0.0.1:8000 ';   // <-- CHANGE THIS
+  // use centralized app config (remove accidental trailing space)
+  final String _apiBaseUrl = AppConfig.apiBaseUrl;
 
   @override
   void initState() {
@@ -41,10 +43,47 @@ class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
     });
     try {
       final products = await _repo.fetchProducts();
-      print('Loaded ${products.length} products');  // Debug log
+      // Defensive sanitization: coerce each element into Map<String,dynamic>
+      final List<Map<String, dynamic>> sanitized = [];
+      for (var i = 0; i < products.length; i++) {
+        final item = products[i];
+        try {
+          final Map<String, dynamic> m = Map<String, dynamic>.from(item);
+          // coerce common fields to safe defaults to avoid null exceptions in widgets
+          m['id'] = m['id']?.toString() ?? '';
+          m['name'] = m['name'] ?? 'Unnamed Product';
+          m['brand'] = m['brand'] ?? '';
+          if (m['price'] is num) {
+            m['price'] = (m['price'] as num).toDouble();
+          } else {
+            m['price'] = 0.0;
+          }
+          if (m['totalStock'] is num) {
+            m['totalStock'] = (m['totalStock'] as num).toInt();
+          } else {
+            m['totalStock'] = 0;
+          }
+          if (m['platforms'] is List) {
+            try {
+              m['platforms'] = List<String>.from(m['platforms']);
+            } catch (_) {
+              m['platforms'] = <String>[];
+            }
+          } else {
+            m['platforms'] = <String>[];
+          }
+          m['primaryImageUrl'] = m['primaryImageUrl'] ?? '';
+          m['isManuallyReviewed'] = m['isManuallyReviewed'] ?? false;
+          m['matchingConfidence'] = m['matchingConfidence']?.toString() ?? 'N/A';
+          sanitized.add(m);
+        } catch (e) {
+          debugPrint('Failed to coerce product at index $i: $e');
+        }
+      }
+      print('Loaded ${sanitized.length} products (sanitized from ${products.length})');  // Debug log
       if (mounted) {
         setState(() {
-          _products = products;
+          _products = sanitized;
           _isLoading = false;
         });
       }
@@ -163,12 +202,12 @@ class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
                 productId: productData['id']?.toString() ?? '',
                 name: productData['name'] ?? 'Unnamed Product',
                 brand: productData['brand'] ?? '',
-                price: (productData['price'] ?? 0).toDouble(),
-                stock: productData['totalStock'] ?? 0,
+                price: (productData['price'] is num) ? (productData['price'] as num).toDouble() : 0.0,
+                stock: (productData['totalStock'] is int) ? productData['totalStock'] as int : (productData['totalStock'] is num ? (productData['totalStock'] as num).toInt() : 0),
                 imageUrl: productData['primaryImageUrl'] ?? '',
-                platforms: List<String>.from(productData['platforms'] ?? []),
+                platforms: (productData['platforms'] is List) ? List<String>.from(productData['platforms']) : <String>[],
                 isManuallyReviewed: productData['isManuallyReviewed'] ?? false,
-                matchingConfidence: productData['matchingConfidence'] ?? 'N/A',
+                matchingConfidence: productData['matchingConfidence']?.toString() ?? 'N/A',
               );
             }).toList(),
           ),
