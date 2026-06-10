@@ -1,9 +1,4 @@
-/*
-  product_stock_view.dart
-  - Displays products in a responsive grid
- 
-*/
-
+// product_stock_view.dart
 import 'package:flutter/material.dart';
 import 'package:responsive_grid_list/responsive_grid_list.dart';
 import 'package:small_business_managment/widgets/product_card.dart';
@@ -21,48 +16,63 @@ class ProductStockViewScreen extends StatefulWidget {
 
 class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
   late ProductRepository _repo;
-  List<Map<String, dynamic>> _products = [];
-  bool _isLoading = true;
-  String? _errorMessage;
+  late Future<List<Map<String, dynamic>>> _productsFuture;
 
-  // use centralized app config (remove accidental trailing space)
-  final String _apiBaseUrl = AppConfig.apiBaseUrl;
+  // Shared Static Cache Strategy matching the Manual Adjustment Form
+  static List<Map<String, dynamic>> _cachedProducts = [];
+  static bool _isCacheValid = false;
+  static DateTime _lastFetch = DateTime.now();
+  static const Duration _cacheDuration = Duration(minutes: 5);
+
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    final api = ProductApiService(baseUrl: _apiBaseUrl);
+    final api = ProductApiService(baseUrl: AppConfig.apiBaseUrl);
     _repo = ProductRepository(apiService: api);
-    _loadProducts();
+    
+    // Kick off product cache/fetch evaluation on startup
+    _productsFuture = _fetchProducts();
   }
 
-  Future<void> _loadProducts() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  // Check if cache is still active, full, and within time limits
+  bool _isCacheValidAndNotEmpty() {
+    return _isCacheValid && 
+           _cachedProducts.isNotEmpty && 
+           DateTime.now().difference(_lastFetch) < _cacheDuration;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchProducts({bool forceRefresh = false}) async {
+    if (!forceRefresh && _isCacheValidAndNotEmpty()) {
+      return _cachedProducts;
+    }
+
     try {
-      final products = await _repo.fetchProducts();
-      // Defensive sanitization: coerce each element into Map<String,dynamic>
+      final rawProducts = await _repo.fetchProducts();
       final List<Map<String, dynamic>> sanitized = [];
-      for (var i = 0; i < products.length; i++) {
-        final item = products[i];
+      
+      // Defensive sanitization pipeline
+      for (var i = 0; i < rawProducts.length; i++) {
+        final item = rawProducts[i];
         try {
           final Map<String, dynamic> m = Map<String, dynamic>.from(item);
-          // coerce common fields to safe defaults to avoid null exceptions in widgets
           m['id'] = m['id']?.toString() ?? '';
           m['name'] = m['name'] ?? 'Unnamed Product';
           m['brand'] = m['brand'] ?? '';
+          
           if (m['price'] is num) {
             m['price'] = (m['price'] as num).toDouble();
           } else {
             m['price'] = 0.0;
           }
+          
           if (m['totalStock'] is num) {
             m['totalStock'] = (m['totalStock'] as num).toInt();
           } else {
             m['totalStock'] = 0;
           }
+          
           if (m['platforms'] is List) {
             try {
               m['platforms'] = List<String>.from(m['platforms']);
@@ -72,6 +82,7 @@ class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
           } else {
             m['platforms'] = <String>[];
           }
+          
           m['primaryImageUrl'] = m['primaryImageUrl'] ?? '';
           m['isManuallyReviewed'] = m['isManuallyReviewed'] ?? false;
           m['matchingConfidence'] = m['matchingConfidence']?.toString() ?? 'N/A';
@@ -80,26 +91,38 @@ class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
           debugPrint('Failed to coerce product at index $i: $e');
         }
       }
-      print('Loaded ${sanitized.length} products (sanitized from ${products.length})');  // Debug log
-      if (mounted) {
-        setState(() {
-          _products = sanitized;
-          _isLoading = false;
-        });
-      }
+
+      debugPrint('Loaded ${sanitized.length} products (sanitized from ${rawProducts.length})');
+      
+      _cachedProducts = sanitized;
+      _isCacheValid = true;
+      _lastFetch = DateTime.now();
+      return sanitized;
     } catch (e) {
-      print(' Error loading products: $e');  // Debug log
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
+      debugPrint('Error loading products: $e');
+      if (_cachedProducts.isNotEmpty) {
+        return _cachedProducts; // Fallback gracefully to old data if API drops
       }
+      rethrow;
     }
   }
 
-  Future<void> _refresh() async {
-    await _loadProducts();
+  // Handle pull-to-refresh directly tracking state
+  Future<void> _refreshProducts() async {
+    setState(() => _isRefreshing = true);
+    try {
+      _productsFuture = _fetchProducts(forceRefresh: true);
+      await _productsFuture;
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to refresh data: $e'), backgroundColor: Colors.redAccent),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
   }
 
   @override
@@ -108,110 +131,116 @@ class _ProductStockViewScreenState extends State<ProductStockViewScreen> {
       title: 'Product Stock',
       body: Container(
         color: const Color(0xFF283240),
-        child: _buildBody(),
-      ),
-    );
-  }
+        child: RefreshIndicator(
+          onRefresh: _refreshProducts,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _productsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting && !_isRefreshing) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                );
+              }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      );
-    }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white70, size: 60),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Error loading products',
+                        style: TextStyle(color: Colors.white70, fontSize: 18),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Text(
+                          snapshot.error.toString(),
+                          style: const TextStyle(color: Colors.white54, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _productsFuture = _fetchProducts(forceRefresh: true);
+                          });
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white70, size: 60),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading products',
-              style: const TextStyle(color: Colors.white70, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage!,
-              style: const TextStyle(color: Colors.white54, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadProducts,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+              final products = snapshot.data ?? [];
 
-    if (_products.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.inventory_2_outlined, color: Colors.white70, size: 60),
-            const SizedBox(height: 16),
-            const Text(
-              'No products found',
-              style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Add products using the manual entry form',
-              style: TextStyle(color: Colors.white54),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/manual-product-entry'),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Product'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+              if (products.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.inventory_2_outlined, color: Colors.white70, size: 60),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No products found',
+                        style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Add products using the manual entry form',
+                        style: TextStyle(color: Colors.white54),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.pushNamed(context, '/manual-product-entry'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Product'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-    // Products exist – show grid
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: ListView(
-        padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
-        children: [
-          ResponsiveGridList(
-            horizontalGridMargin: 16,
-            verticalGridMargin: 16,
-            minItemWidth: 280,
-            maxItemsPerRow: 4,
-            children: _products.map((productData) {
-              return ProductCard(
-                productId: productData['id']?.toString() ?? '',
-                name: productData['name'] ?? 'Unnamed Product',
-                brand: productData['brand'] ?? '',
-                price: (productData['price'] is num) ? (productData['price'] as num).toDouble() : 0.0,
-                stock: (productData['totalStock'] is int) ? productData['totalStock'] as int : (productData['totalStock'] is num ? (productData['totalStock'] as num).toInt() : 0),
-                imageUrl: productData['primaryImageUrl'] ?? '',
-                platforms: (productData['platforms'] is List) ? List<String>.from(productData['platforms']) : <String>[],
-                isManuallyReviewed: productData['isManuallyReviewed'] ?? false,
-                matchingConfidence: productData['matchingConfidence']?.toString() ?? 'N/A',
+              // Fixed: ResponsiveGridList is now the root scrollable widget.
+              // Added verticalGridMargin: 24 to preserve your layout's top/bottom layout spacing.
+              return ResponsiveGridList(
+                horizontalGridMargin: 16,
+                verticalGridMargin: 24,
+                minItemWidth: 280,
+                maxItemsPerRow: 4,
+                children: products.map((productData) {
+                  return ProductCard(
+                    productId: productData['id']?.toString() ?? '',
+                    name: productData['name'] ?? 'Unnamed Product',
+                    brand: productData['brand'] ?? '',
+                    price: (productData['price'] is num) ? (productData['price'] as num).toDouble() : 0.0,
+                    stock: (productData['totalStock'] is int) ? productData['totalStock'] as int : 0,
+                    imageUrl: productData['primaryImageUrl'] ?? '',
+                    platforms: (productData['platforms'] is List) ? List<String>.from(productData['platforms']) : <String>[],
+                    isManuallyReviewed: productData['isManuallyReviewed'] ?? false,
+                    matchingConfidence: productData['matchingConfidence']?.toString() ?? 'N/A',
+                  );
+                }).toList(),
               );
-            }).toList(),
+            },
           ),
-        ],
+        ),
       ),
     );
   }
