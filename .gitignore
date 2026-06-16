@@ -52,3 +52,5 @@ venv/
 
 backend/service-account.json
 /.env
+
+assets/.env
