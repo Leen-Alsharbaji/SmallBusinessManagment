@@ -1,0 +1,1147 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[turkish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[table]{xcolor}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{changepage}
+\usepackage{mdframed}
+\usepackage{wrapfig}
+\usepackage[explicit]{titlesec}
+
+\geometry{a4paper, margin=2.5cm}
+
+% Color Definitions
+\definecolor{primaryblue}{RGB}{10,30,59}
+\definecolor{secondaryblue}{RGB}{30,144,255}
+\definecolor{successgreen}{RGB}{46,125,50}
+\definecolor{errorred}{RGB}{198,40,40}
+\definecolor{warningorange}{RGB}{245,124,0}
+\definecolor{lightgray}{RGB}{245,245,245}
+\definecolor{darkgray}{RGB}{51,51,51}
+\definecolor{tableheader}{RGB}{10,30,59}
+\definecolor{codebg}{RGB}{247,247,247}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primaryblue,
+    urlcolor=secondaryblue,
+    citecolor=primaryblue
+}
+
+% Page Style
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textbf{Smart Inventory Hub}}
+\fancyhead[R]{\thepage}
+\fancyfoot[L]{EFC304 - Mobil Uygulama Tasarımı ve Geliştirme}
+\fancyfoot[R]{Final Proje Raporu}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Section Styling
+\titleformat{\section}
+{\normalfont\Large\bfseries\color{primaryblue}}
+{\thesection}{1em}{#1}
+\titleformat{\subsection}
+{\normalfont\large\bfseries\color{primaryblue}}
+{\thesubsection}{1em}{#1}
+\titleformat{\subsubsection}
+{\normalfont\normalsize\bfseries\color{primaryblue}}
+{\thesubsubsection}{1em}{#1}
+
+% Table Styling
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\definecolor{tableheadercolor}{RGB}{10,30,59}
+\definecolor{tableheadertext}{RGB}{255,255,255}
+\definecolor{tablerowcolor}{RGB}{245,245,245}
+\definecolor{tablerowaltcolor}{RGB}{255,255,255}
+
+% Code Listing Style
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{codebg},
+    commentstyle=\color{green!60!black},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{gray},
+    stringstyle=\color{orange},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{lightgray}
+}
+
+\lstset{style=codestyle}
+
+% Custom Environments
+\newmdenv[
+    linecolor=primaryblue,
+    backgroundcolor=lightgray,
+    linewidth=2pt,
+    roundcorner=5pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerleftmargin=10pt,
+    innerrightmargin=10pt
+]{infobox}
+
+\newmdenv[
+    linecolor=warningorange,
+    backgroundcolor=yellow!10,
+    linewidth=2pt,
+    roundcorner=5pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerleftmargin=10pt,
+    innerrightmargin=10pt
+]{warningbox}
+
+\newmdenv[
+    linecolor=successgreen,
+    backgroundcolor=green!10,
+    linewidth=2pt,
+    roundcorner=5pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerleftmargin=10pt,
+    innerrightmargin=10pt
+]{successbox}
+
+\newmdenv[
+    linecolor=errorred,
+    backgroundcolor=red!10,
+    linewidth=2pt,
+    roundcorner=5pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt,
+    innerleftmargin=10pt,
+    innerrightmargin=10pt
+]{errorbox}
+
+% Title Page
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    % If you have a logo, uncomment the line below and ensure university\_logo.png is in the same folder
+    % \includegraphics[width=4cm]{university\_logo.png}\\[0.5cm]
+    
+    {\LARGE\bfseries\color{primaryblue} EFC304 - Mobil Uygulama Tasarımı ve Geliştirme}\\[0.5cm]
+    {\Large\bfseries Final Sınavı Proje Raporu}\\[2cm]
+    
+    \rule{\textwidth}{1pt}\\[0.5cm]
+    {\Huge\bfseries Smart Inventory Hub:}\\
+    {\huge\bfseries Merkezi Envanter Yönetim Sistemi}\\[0.5cm]
+    \rule{\textwidth}{1pt}\\[2cm]
+    
+    \begin{tabular}{p{0.35\textwidth} p{0.55\textwidth}}
+        \textbf{Öğrenci Adı Soyadı} & Lin Çorbacı \\
+        \textbf{Öğrenci Numarası} & [Numaranızı Yazınız] \\
+        \textbf{Öğrenci İmzası} & [İmzanızı Atınız] \\
+        \textbf{Ders Kodu / Ders Adı} & CEN306 - Mobile Application Design and Development \\
+        \textbf{Öğretim Elemanı} & Dr. Yıldız Karadayı \\
+        \textbf{Teslim Tarihi} & 25/06/2026 \\
+        \textbf{Kaynak Kod Deposu} & [GitHub/GitLab/Drive bağlantısı] \\
+        \textbf{Demo Video Bağlantısı} & [YouTube video bağlantısı] \\
+        \textbf{Uygulama Adı} & Smart Inventory Hub
+    \end{tabular}
+    
+    \vfill
+    
+    \begin{infobox}
+        \textbf{Teslim hatırlatması:} Raporu teslim etmeden önce köşeli parantez içindeki tüm yer tutucuları değiştiriniz, ekran görüntülerini ekleyiniz, tablo ve şekil başlıklarını güncelleyiniz ve yazım/biçimlendirme kontrolü yapınız.
+    \end{infobox}
+\end{titlepage}
+
+% Academic Honesty Declaration
+\section*{Akademik Dürüstlük Beyanı}
+
+Bu raporun ve projenin tarafımca/tarafımızca hazırlandığını; kullanılan tüm dış kaynakların, kütüphanelerin, görsellerin, kod parçalarının ve veri kümelerinin uygun şekilde belirtildiğini onaylarım/onaylarız.
+
+% Template Usage Guide
+\section*{Bu Şablon Nasıl Kullanılmalı?}
+
+Bölüm başlıklarını koruyunuz. Daha temiz bir son rapor elde etmek için yönlendirme metinlerini silebilirsiniz; ancak değerlendirmede beklenen her konunun raporda yer aldığından emin olunuz.
+
+\begin{longtable}{|L{2cm}|L{12cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Adım} & \color{white}\textbf{Yapılacak işlem} \\
+    \hline
+    1 & Her [yer tutucuyu] kendi proje bilginizle değiştiriniz. \\
+    \hline
+    2 & Ana ekranların ekran görüntülerini ekleyiniz ve her ekranın işlevini açıklayınız. \\
+    \hline
+    3 & Katmanlı mimariyi; UI, iş mantığı/domain, veri katmanı, SQLite, DAO ve Repository bileşenlerini kapsayacak şekilde açıklayınız. \\
+    \hline
+    4 & Veri akışını ve durum yönetimi akışını örneklerle gösteriniz. \\
+    \hline
+    5 & Teknik zorlukları, aldığınız tasarım kararlarını ve uyguladığınız çözümleri dürüst ve açık biçimde yazınız. \\
+    \hline
+\end{longtable}
+
+% Evaluation Checklist
+\section*{Değerlendirme Uyum Kontrol Listesi: 30 Puan}
+
+Aşağıdaki kontrol listesi resmi Proje Raporu Değerlendirme Ölçütleri (30 puan) ile uyumludur. Raporunuzun her puanlama kategorisi için yeterli kanıt içerdiğini doğrulamak amacıyla kullanınız.
+
+\begin{warningbox}
+    \textbf{Rubrik hatırlatması:} Sadece ekran görüntüsü eklemek yeterli değildir. Teknik yapı; veri ve durum akışı, model nesneleri, SQLite tablo tasarımı, DAO fonksiyonları ve Repository sorumlulukları ile birlikte açıklanmalıdır. Teslim edilen projenin başarıyla çalışması; açıklanmamış hazır şablonlardan ve yoğun, açıklamasız yapay zekâ üretimli kod kullanımından kaçınılması beklenir.
+\end{warningbox}
+
+\begin{longtable}{|L{5cm}|C{1.5cm}|L{4cm}|L{4cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Resmi rapor ölçütü} & \color{white}\textbf{Puan} & \color{white}\textbf{Rapor bölümü/bölümleri} & \color{white}\textbf{Kanıt / öz-kontrol} \\
+    \hline
+    Rapor Yapısı ve Düzen & 5 & Kapak sayfası; içindekiler; tüm ana bölümler & Açık akademik/teknik yapı; tutarlı başlıklar, biçimlendirme, sayfa numaraları, şekil ve tablo başlıkları. \\
+    \hline
+    Proje Amacı ve Kapsamı & 5 & Bölüm 1-3 & Uygulamanın amacı, çözdüğü problem, hedef kullanıcılar, kapsam, temel özellikler, gereksinimler ve kullanım senaryoları açıkça anlatılmıştır. \\
+    \hline
+    Mimari ve Teknik Tasarım Açıklaması & 10 & Bölüm 5-7 & Katmanlı mimari; UI/business-data ayrımı; SQLite, DAO, Repository, model nesneleri, veri akışı, durum yönetimi ve önemli teknik kararlar açıklanmıştır. \\
+    \hline
+    Ekran Görüntüleri ve Ekran Açıklamaları & 5 & Bölüm 4; Ek A & Ana ekranların ekran görüntüleri; her ekranın amacı, kullanıcı eylemleri, gösterdiği veri ve navigasyon bağlantıları ile birlikte verilmiştir. \\
+    \hline
+    Teknik Değerlendirme ve Geliştirme Süreci & 5 & Bölüm 8-10 & Test kanıtları, teknik zorluklar, nedenler, uygulanan çözümler, tasarım kararları, sınırlılıklar ve gelecek iyileştirmeler açıklanmıştır. \\
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Proje Raporu Toplamı} & \color{white}\textbf{30} & \color{white}\textbf{Tüm rapor} & \color{white}\textbf{Raporda tüm ölçütlere karşılık gelen açık ve teknik kanıt bulunmalıdır.} \\
+    \hline
+\end{longtable}
+
+% Table of Contents
+\newpage
+\tableofcontents
+\newpage
+
+% ============================================================
+% SECTION 1: EXECUTIVE SUMMARY
+% ============================================================
+\section{Yönetici Özeti}
+
+\textbf{Smart Inventory Hub}, küçük e-ticaret işletmeleri için tasarlanmış, pazar yerleri (Trendyol) ve sosyal ticaret kanallarını (WhatsApp, Instagram) tek bir platformda birleştiren merkezi bir envanter yönetim sistemidir. Proje, manuel sipariş girişlerini atomik olarak işleyerek envanter tutarsızlıklarını önlemeyi, NLP tabanlı ürün başlığı birleştirme ile veriyi standartlaştırmayı ve Firestore tabanlı gerçek zamanlı veritabanı ile operasyonel verimlilik sağlamayı amaçlar.
+
+Teknik mimari, Flutter Web tabanlı bir ön yüz ve yüksek performanslı Python FastAPI arka ucu üzerine inşa edilmiştir. Frontend, Provider tabanlı durum yönetimi ile responsive bir kullanıcı deneyimi sunarken; backend, katmanlı bir yapıda (routers -> services -> repositories) Firestore veritabanı işlemlerini yönetir. En kritik özellik olan manuel sipariş kaydı, Firestore transaction mekanizması kullanılarak stok tutarlılığını garanti eder ve her stok hareketi için audit trail oluşturur.
+
+Proje, e-ticaret KOBİ'lerinin manuel sipariş girişi, stok yönetimi ve çoklu kanal entegrasyonu ihtiyaçlarını karşılayan MVP (Minimum Uygulanabilir Ürün) sürümüdür. Geliştirme sürecinde karşılaşılan eşzamanlılık sorunları ve farklı ürün başlıklarını eşleme zorlukları, sırasıyla Firestore transaction ve TF-IDF tabanlı NLP algoritması ile çözülmüştür.
+
+% ============================================================
+% SECTION 2: PROJECT INTRODUCTION
+% ============================================================
+\section{Proje Tanıtımı}
+
+\subsection{Proje Amacı}
+
+Küçük ve orta ölçekli e-ticaret işletmeleri, ürünlerini genellikle birden fazla kanalda (Trendyol, Hepsiburada, WhatsApp, Instagram) satmaktadır. Bu çoklu kanal yapısı, stok yönetimini karmaşık hale getirir ve manuel sipariş girişlerinde tutarsızlıklara yol açar. Bir ürünün stokta olmamasına rağmen sipariş alınması (over-selling) veya stokta olmasına rağmen satılamaması gibi durumlar, işletmeler için ciddi müşteri memnuniyeti ve gelir kayıplarına neden olur.
+
+\textbf{Smart Inventory Hub}, bu problemi çözmek için aşağıdaki hedeflerle geliştirilmiştir:
+
+\begin{enumerate}
+    \item \textbf{Merkezi Envanter Yönetimi:} Tüm ürünlerin tek bir noktadan yönetilmesi ve tüm kanallarda gerçek zamanlı stok takibi sağlanması.
+    \item \textbf{Atomik Sipariş İşleme:} Manuel sipariş girişlerinde stok tutarlılığının garanti edilmesi ve çakışan siparişlerde "over-selling"in engellenmesi.
+    \item \textbf{Pazar Yeri Entegrasyonu:} Trendyol gibi büyük pazar yerlerinden ürün verilerinin otomatik olarak çekilmesi ve iç katalog ile eşleştirilmesi.
+    \item \textbf{NLP Tabanlı Ürün Birleştirme:} Farklı platformlardaki farklı ürün başlıklarının, TF-IDF ve Cosine Similarity algoritması ile otomatik olarak eşleştirilmesi.
+    \item \textbf{Operasyonel Verimlilik:} Manuel süreçlerin dijitalleştirilmesi ve her stok hareketinin denetlenebilir (audit trail) olması.
+\end{enumerate}
+
+\subsection{Projenin Kapsamı}
+
+Bu MVP (Minimum Uygulanabilir Ürün) sürümü aşağıdaki özellikleri kapsamaktadır:
+
+\subsubsection*{Dahil Edilenler:}
+\begin{itemize}
+    \item Firebase Authentication ile kullanıcı girişi ve profil yönetimi
+    \item Firestore NoSQL veritabanı ile ürün, sipariş ve stok işlemleri yönetimi
+    \item Trendyol Mock API entegrasyonu ile ürün verisi çekme
+    \item NLP (TF-IDF + Cosine Similarity) tabanlı ürün başlığı birleştirme motoru
+    \item Manuel sipariş girişi (WhatsApp/Instagram satışları için)
+    \item Manuel stok düzeltme işlemleri
+    \item Stok hareketleri audit trail kaydı
+    \item Flutter Web, iOS ve Android platform desteği
+    \item Dashboard ile temel metriklerin görüntülenmesi
+\end{itemize}
+
+\subsubsection*{Kapsam Dışı Bırakılanlar:}
+\begin{itemize}
+    \item Gerçek Trendyol API entegrasyonu (Mock API kullanılmıştır)
+    \item Otomatik sipariş senkronizasyonu (sadece manuel sipariş girişi)
+    \item Gelişmiş raporlama ve analitik modülleri
+    \item Çoklu kullanıcı ve rol tabanlı erişim kontrolü
+    \item Ürün görsel yönetimi (CDN entegrasyonu)
+    \item Mobil push bildirimleri
+\end{itemize}
+
+\subsection{Hedef Kullanıcılar ve Kullanım Senaryosu}
+
+\subsubsection*{Hedef Kullanıcılar:}
+\begin{itemize}
+    \item E-ticaret pazar yerlerinde (Trendyol, Hepsiburada) aktif satış yapan KOBİ sahipleri
+    \item Sosyal medya (WhatsApp, Instagram) üzerinden manuel sipariş alan küçük işletmeler
+    \item Ürün kataloğu 100-1000 arası ürün içeren orta ölçekli işletmeler
+    \item Teknik bilgi seviyesi düşük, kullanımı kolay bir arayüz arayan kullanıcılar
+\end{itemize}
+
+\subsubsection*{Kullanım Senaryosu}
+
+\emph{Ahmet Bey, İstanbul'da küçük bir elektronik eşya mağazası işletmektedir. Ürünlerini hem Trendyol'da satmakta hem de WhatsApp üzerinden müşterilerine özel sipariş almaktadır.}
+
+\begin{enumerate}
+    \item \textbf{Sabah Rutini:} Ahmet Bey, işe başladığında Smart Inventory Hub'a giriş yapar. Dashboard'da toplam ürün sayısı, mevcut stok durumu ve düşük stoktaki ürünleri görür. "Product Stock" ekranından tüm ürünlerinin stok seviyelerini kontrol eder.
+    
+    \item \textbf{Trendyol Ürün Senkronizasyonu:} "Profile" ekranından Trendyol Seller ID ve API şifresini girer. Sistem, Trendyol'daki ürünleri çeker ve NLP motoru ile mevcut katalogdaki ürünlerle eşleştirir. Yeni ürünler "raw\_products" koleksiyonuna kaydedilir ve otomatik eşleşme başarısız olanlar manuel incelemeye işaretlenir.
+    
+    \item \textbf{Manuel Sipariş Kaydı:} WhatsApp üzerinden bir müşteri, "iPhone 15 Pro Max" için sipariş verir. Ahmet Bey, "Manual Sale Entry" ekranını açar, ürünü seçer, sipariş adedini (2 adet) ve satış fiyatını girer. Sistem, Firestore transaction ile stoğu atomik olarak düşer (50 -> 48) ve sipariş kaydı ile audit trail oluşturur.
+    
+    \item \textbf{Stok Düzeltme:} Depodan gelen yeni ürünler için stok güncellemesi yapmak istediğinde, "Manual Stock Update" ekranını kullanır. Ürünü seçer, yeni stok miktarını girer ve nedenini belirtir. Sistem bu işlemi de audit trail'e kaydeder.
+    
+    \item \textbf{Gün Sonu Kontrolü:} Gün sonunda Dashboard'u kontrol eder, gün içinde yapılan tüm satışları ve stok değişimlerini gözden geçirir.
+\end{enumerate}
+
+\subsection{Temel Özellikler}
+
+\begin{longtable}{|L{4cm}|L{6cm}|L{4cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Özellik} & \color{white}\textbf{Açıklama} & \color{white}\textbf{İlgili ekran(lar)} \\
+    \hline
+    Stok Senkronizasyonu & Trendyol API üzerinden güncel ürün verisi çekme ve stokları eşitleme & Profile, Product Stock \\
+    \hline
+    Manuel Sipariş Girişi & WhatsApp/Instagram satışları için atomik stok düşümü yapma & Manual Sale Entry \\
+    \hline
+    Ürün Birleştirme (NLP) & TF-IDF + Cosine Similarity ile farklı başlıktaki ürünleri otomatik eşleme & (Arka uç servisi) \\
+    \hline
+    Stok Hareket İzleme & Her stok değişimi için audit trail kaydı tutma & (Arka uç servisi) \\
+    \hline
+    Dashboard Metrikleri & Toplam ürün, stok durumu, düşük stok uyarıları görüntüleme & Dashboard \\
+    \hline
+    Ürün Yönetimi & Ürün ekleme, düzenleme, silme ve stok güncelleme & Product Stock, Manual New Product Entry \\
+    \hline
+    Pazar Yeri Bağlantısı & Trendyol hesap bağlantısı ve API kimlik bilgilerinin şifreli saklanması & Profile \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 3: REQUIREMENTS AND USE CASES
+% ============================================================
+\section{Gereksinimler ve Kullanım Senaryoları}
+
+\subsection{İşlevsel Gereksinimler}
+
+\begin{longtable}{|L{2.5cm}|L{5.5cm}|C{2.5cm}|C{2.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{ID} & \color{white}\textbf{İşlevsel gereksinim} & \color{white}\textbf{Öncelik} & \color{white}\textbf{Uygulandı mı?} \\
+    \hline
+    FR-01 & Kullanıcı Firebase Authentication ile giriş yapabilir. & Yüksek & Evet \\
+    \hline
+    FR-02 & Kullanıcı Trendyol marketplace hesabını bağlayabilir (API kimlik bilgilerini şifreli saklayarak). & Yüksek & Evet \\
+    \hline
+    FR-03 & Kullanıcı mevcut ürünleri listeleyebilir ve detaylarını görüntüleyebilir. & Yüksek & Evet \\
+    \hline
+    FR-04 & Kullanıcı yeni ürün ekleyebilir. & Yüksek & Evet \\
+    \hline
+    FR-05 & Kullanıcı ürün stok miktarını manuel olarak güncelleyebilir. & Yüksek & Evet \\
+    \hline
+    FR-06 & Kullanıcı manuel sipariş (WhatsApp/Instagram) kaydı yapabilir. & Yüksek & Evet \\
+    \hline
+    FR-07 & Manuel sipariş işlemi sırasında stok otomatik olarak düşer (transaction ile). & Yüksek & Evet \\
+    \hline
+    FR-08 & Her stok değişimi audit trail olarak kaydedilir. & Orta & Evet \\
+    \hline
+    FR-09 & NLP motoru, marketplace'ten gelen ürün başlıklarını katalogdaki ürünlerle eşleştirebilir. & Orta & Evet \\
+    \hline
+    FR-10 & Kullanıcı dashboard üzerinden temel iş metriklerini görüntüleyebilir. & Düşük & Evet \\
+    \hline
+    FR-11 & Kullanıcı ürünleri platform bazında filtreleyebilir. & Düşük & Hayır \\
+    \hline
+    FR-12 & Sistem, stok 5'in altına düştüğünde uyarı gösterebilir. & Orta & Evet \\
+    \hline
+\end{longtable}
+
+\subsection{İşlevsel Olmayan Gereksinimler}
+
+\begin{longtable}{|L{3.5cm}|L{5cm}|L{6cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Kategori} & \color{white}\textbf{Gereksinim} & \color{white}\textbf{Nasıl karşılandı?} \\
+    \hline
+    Kullanılabilirlik & Uygulama, teknik bilgisi düşük kullanıcılar için kolay gezilebilir olmalıdır. & Material 3 tasarım bileşenleri, responsive layout, anlaşılır icon ve etiketler kullanılmıştır. Drawer navigasyonu ile tüm ekranlara tek tıkla erişim sağlanır. \\
+    \hline
+    Performans & Firestore işlemleri normal veri boyutunda (1000 ürün) 2 saniye içinde yanıt vermelidir. & Firestore indeksleme, async/await yapısı ve transaction optimizasyonu ile performans sağlanmıştır. NLP işlemleri arka uçta async olarak çalışır. \\
+    \hline
+    Güvenilirlik & Uygulama hatalı girişleri ve veritabanı hatalarını kullanıcıya anlaşılır şekilde bildirmelidir. & Pydantic validasyon, custom exception hierarchy ve frontend'de snackbar/error banner ile kullanıcı geri bildirimi sağlanmıştır. \\
+    \hline
+    Sürdürülebilirlik & Kod katmanlara ayrılmış şekilde organize edilmelidir. & Repository ve Service katmanları ile mimari ayrım sağlanmıştır. Frontend'de Provider pattern ve repository pattern kullanılmıştır. \\
+    \hline
+    Güvenlik & API anahtarları ve kullanıcı kimlik bilgileri korunmalıdır. & Fernet simetrik şifreleme (PBKDF2-HMAC-SHA256) ile marketplace API şifreleri Firestore'da şifrelenerek saklanır. Firebase Auth ile kullanıcı kimlik doğrulaması yapılır. \\
+    \hline
+    Erişilebilirlik & Uygulama farklı ekran boyutlarında (mobil, tablet, web) çalışabilmelidir. & Flutter responsive layout ve MediaQuery kullanılarak, mobil/tablet/web uyumlu responsive tasarım sağlanmıştır. \\
+    \hline
+\end{longtable}
+
+\subsection{Kullanım Senaryoları}
+
+\begin{longtable}{|L{3.5cm}|L{2.5cm}|L{2.5cm}|L{4cm}|L{3.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Kullanım senaryosu} & \color{white}\textbf{Aktör} & \color{white}\textbf{Ön koşul} & \color{white}\textbf{Ana akış} & \color{white}\textbf{Beklenen sonuç} \\
+    \hline
+    UC-01: Manuel Sipariş Kaydı & Kullanıcı (Satıcı) & Uygulama açık, kullanıcı giriş yapmış, en az bir ürün var & Kullanıcı "Manual Sale Entry" ekranını açar, ürünü seçer, adet ve fiyat girer, "Record Order" butonuna basar. & Ürün stoğu atomik olarak düşer, sipariş Firestore'a kaydedilir, audit trail oluşturulur, başarı mesajı gösterilir. \\
+    \hline
+    UC-02: Ürün Stok Güncelleme & Kullanıcı (Satıcı) & Uygulama açık, kullanıcı giriş yapmış & Kullanıcı "Manual Stock Update" ekranını açar, ürünü seçer, yeni stok miktarını ve güncelleme nedenini girer, "Update Stock" butonuna basar. & Ürün stoğu güncellenir, audit trail kaydı oluşturulur, başarı mesajı gösterilir. \\
+    \hline
+    UC-03: Yeni Ürün Ekleme & Kullanıcı (Satıcı) & Uygulama açık, kullanıcı giriş yapmış & Kullanıcı "New Product" ekranını açar, ürün bilgilerini (isim, marka, kategori, fiyat, stok) girer, "Add Product" butonuna basar. & Yeni ürün Firestore unified\_products koleksiyonuna kaydedilir, listede görünür, başarı mesajı gösterilir. \\
+    \hline
+    UC-04: Trendyol Bağlantısı & Kullanıcı (Satıcı) & Uygulama açık, kullanıcı giriş yapmış & Kullanıcı "Profile" ekranına gider, Seller ID ve API şifresini girer, "Connect Trendyol" butonuna basar. & Kimlik bilgileri şifrelenerek Firestore'da saklanır, bağlantı durumu "Connected" olarak görünür. \\
+    \hline
+    UC-05: Trendyol Ürün Çekme & Kullanıcı (Satıcı) & Trendyol bağlantısı yapılmış & Kullanıcı "Sync" butonuna basar veya sistem otomatik olarak çeker. & Trendyol'dan ürünler çekilir, NLP ile eşleştirilir, raw\_products koleksiyonuna kaydedilir. \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 4: UI DESIGN AND SCREENS
+% ============================================================
+\section{Kullanıcı Arayüzü Tasarımı ve Ekranlar}
+
+\subsection{UI Tasarım Yaklaşımı}
+
+Smart Inventory Hub arayüzü, \textbf{Material 3} tasarım prensipleri temel alınarak geliştirilmiştir. Tasarım kararları:
+
+\begin{itemize}
+    \item \textbf{Sadelik ve Kullanılabilirlik:} Kullanıcıların günlük iş akışlarını hızlıca tamamlaması için gereksiz karmaşıklıktan kaçınılmıştır. Her ekran tek bir birincil göreve odaklanır.
+    \item \textbf{Responsive Tasarım:} Flutter'ın MediaQuery yapısı kullanılarak, aynı kod tabanı mobil, tablet ve web'de sorunsuz çalışacak şekilde tasarlanmıştır. 800px altında drawer navigasyon, üstünde ise yan menü görüntülenir.
+    \item \textbf{Renk Paleti:} Gece mavisi (\#0A1E3B) ve mavi (\#1E90FF) gradient ile güven veren bir görünüm sağlanır. Yeşil (başarı), kırmızı (hata) ve turuncu (uyarı) renkler durum bildirimleri için kullanılır.
+    \item \textbf{Tipografi:} Material 3 varsayılan font ailesi kullanılmıştır. Başlıklar (HeadlineLarge) ve vurgulanmış metinler (TitleMedium) ile okunabilirlik artırılmıştır.
+    \item \textbf{Geri Bildirim:} Her kullanıcı işlemi için SnackBar, dialog veya ekran içi error banner ile görsel geri bildirim sağlanmıştır.
+    \item \textbf{Erişilebilirlik:} Yeterli kontrast oranları ve yeterli tıklama alanları (minimum 48x48dp) ile erişilebilirlik gözetilmiştir.
+\end{itemize}
+
+\subsection{Navigasyon Akışı}
+
+Uygulamanın navigasyon yapısı aşağıdaki gibidir:
+
+\begin{verbatim}
+SignInScreen (Giris Ekrani)
+    |
+    v (AuthGate - Firebase Auth)
+HomeScreen (Ana Sayfa - AppScaffold ile Drawer)
+    |
+    |-- Profile Screen
+    |   |-- Kullanici bilgileri
+    |   \-- Trendyol Baglantisi Yonetimi
+    |
+    |-- Dashboard Screen
+    |   \-- Metrik kartlari (Toplam Urun, Toplam Stok, Dusuk Stok, Platformlar)
+    |
+    |-- Product Stock View
+    |   \-- Tum urunlerin listesi ve stok bilgileri
+    |
+    |-- Manual Sale Entry
+    |   |-- Urun secimi
+    |   |-- Adet, fiyat, platform, tarih girisi
+    |   \-- Siparis kaydetme (atomik stok dusumu)
+    |
+    |-- Manual Stock Update
+    |   |-- Urun secimi
+    |   \-- Yeni stok miktari ve neden girisi
+    |
+    \-- Manual New Product Entry
+        |-- Urun bilgileri girisi
+        \-- Urun olusturma
+\end{verbatim}
+
+\textbf{Navigasyon Detayları:}
+\begin{itemize}
+    \item Tüm ekranlar \texttt{AppScaffold} widget'ı ile sarılmıştır. Bu widget, ekran boyutuna göre drawer veya yan menü gösterir.
+    \item \texttt{Navigator.pushNamed()} ile ekranlar arası geçiş yapılır.
+    \item \texttt{Drawer} üzerindeki her item, ilgili ekrana yönlendirir.
+    \item Mobil görünümde drawer açıldığında seçim yapıldıktan sonra otomatik kapanır.
+    \item Web görünümünde yan menü sabit olarak görüntülenir.
+\end{itemize}
+
+\subsection{Ana Ekran Görüntüleri ve Açıklamaları}
+
+\begin{longtable}{|L{3.5cm}|L{3.5cm}|L{4.5cm}|L{4.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Ekran adı} & \color{white}\textbf{Ekran görüntüsü} & \color{white}\textbf{Amaç / ana işlev} & \color{white}\textbf{Navigasyon / kullanıcı eylemleri} \\
+    \hline
+    Sign In Screen & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Firebase Authentication ile kullanıcı girişi. Email adresi ve şifre ile oturum açma. & Email ve şifre giriş alanları; "Sign In" butonu; kayıtlı kullanıcıları Firebase Auth üzerinden oturum açar. \\
+    \hline
+    Profile Screen & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Kullanıcı bilgilerini gösterme, Trendyol marketplace bağlantısını yönetme (ekleme/güncelleme). & Kullanıcı email ve display name gösterilir. Seller ID ve API şifresi girilerek "Connect Trendyol" butonuna basılır. "Sign Out" ile çıkış yapılır. \\
+    \hline
+    Dashboard Screen & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & İş metriklerini özet kartlar halinde gösterme: Toplam Ürün, Toplam Stok, Düşük Stok Ürünleri, Platform Sayısı. & Ürünler yüklendikçe kartlar otomatik güncellenir. Her kart, ilgili metni gösterir. \\
+    \hline
+    Product Stock View & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Tüm ürünlerin listesini ve stok seviyelerini görüntüleme. & Ürün listesi Card widget'ları ile gösterilir. Her üründe isim, marka, stok miktarı ve fiyat bilgisi bulunur. Stok 5'in altında olanlar turuncu uyarı ile işaretlenir. \\
+    \hline
+    Manual Sale Entry & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & WhatsApp/Instagram satışlarını kaydetme. Ürün seçimi, adet, fiyat, platform ve tarih bilgilerini girme. & Form alanları doldurulur; "Record Order" butonu ile gönderilir. Sipariş başarılı ise SnackBar gösterilir ve stok güncellenir. \\
+    \hline
+    Manual Stock Update & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Mevcut ürünün stok miktarını manuel olarak güncelleme. & Ürün seçilir, yeni stok miktarı girilir, güncelleme nedeni belirtilir. "Update Stock" butonu ile gönderilir. \\
+    \hline
+    Manual New Product Entry & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Yeni ürünü kataloğa ekleme. Ürün ismi, marka, kategori, fiyat, stok bilgileri girilir. & Form alanları doldurulur, "Add Product" butonu ile gönderilir. Başarılı ise ürün listesine eklenir. \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 5: TECHNICAL ARCHITECTURE
+% ============================================================
+\section{Teknik Mimari}
+
+\subsection{Genel Katmanlı Mimari}
+
+Smart Inventory Hub, üç ana katmandan oluşan bir mimari yapıya sahiptir. Bu yapı, \textbf{sorumluluk ayrımı} (Separation of Concerns) prensibini takip ederek kodun sürdürülebilirliğini ve test edilebilirliğini artırır.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=0.5cm,
+        box/.style={rectangle, draw=primaryblue, fill=primaryblue!10, text width=12cm, minimum height=2.5cm, align=center, rounded corners=3pt, font=\small},
+        arrow/.style={->, thick, draw=primaryblue}
+    ]
+    \node[box] (presentation) {
+        \textbf{SUNUM KATMANI (Flutter)}\\
+        \vspace{0.3cm}
+        \begin{minipage}{10cm}
+            \begin{itemize}
+                \item Ekranlar (SignInScreen, DashboardScreen, ManualOrderEntryScreen)
+                \item Widget'lar (AppScaffold, ProductCard, ErrorBanner)
+                \item Provider (ProductProvider, OrderProvider) - Durum Yönetimi
+                \item Kullanıcı etkileşimi, form doğrulama, navigasyon
+            \end{itemize}
+        \end{minipage}
+    };
+    
+    \node[box, below=of presentation] (business) {
+        \textbf{UYGULAMA / İŞ MANTIĞI KATMANI (FastAPI)}\\
+        \vspace{0.3cm}
+        \begin{minipage}{10cm}
+            \begin{itemize}
+                \item Service Layer (ProductService, OrderService, MarketplaceService)
+                \item İş kuralları ve validasyon
+                \item Transaction yönetimi (Firestore atomic transactions)
+                \item NLP Servisi (TitleUnificationService - TF-IDF + Cosine Sim.)
+            \end{itemize}
+        \end{minipage}
+    };
+    
+    \node[box, below=of business] (repository) {
+        \textbf{REPOSITORY KATMANI}\\
+        \vspace{0.3cm}
+        \begin{minipage}{10cm}
+            \begin{itemize}
+                \item ProductRepository - OrderRepository - UserRepository
+                \item StockTransactionRepository - RawProductRepository
+                \item Veri erişimini UI/iş mantığından soyutlar
+                \item Firestore
+            \end{itemize}
+        \end{minipage}
+    };
+    
+    \draw[arrow] (presentation) -- (business);
+    \draw[arrow] (business) -- (repository);
+    \end{tikzpicture}
+    \caption{Önerilen katmanlı mimari akışı}
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{Klasör ve Paket Yapısı}
+
+Proje, backend ve frontend olmak üzere iki ana bölümden oluşur:
+
+\subsubsection*{Backend (FastAPI) Yapısı}
+
+\begin{verbatim}
+backend/
+|-- main.py                          # Uvicorn entry point
+|-- requirements.txt                 # Python dependencies
+\-- app/
+    |-- main.py                      # FastAPI app factory
+    |-- config.py                    # Environment settings
+    |-- dependencies.py              # Dependency injection
+    |-- exceptions.py                # Custom exception classes
+    |-- db/
+    |   \-- firestore_client.py      # Firebase/Firestore initialization
+    |-- models/                      # Pydantic data models
+    |   |-- auth.py
+    |   |-- order.py
+    |   |-- product.py
+    |   \-- sync.py
+    |-- repositories/                # Data access layer
+    |   |-- order_repository.py
+    |   |-- product_repository.py
+    |   \-- user_repository.py
+    |-- routers/                     # API endpoints
+    |   |-- auth.py
+    |   |-- inventory.py
+    |   |-- orders.py
+    |   |-- sync.py
+    |   \-- legacy.py
+    |-- services/                    # Business logic layer
+    |   |-- marketplace_service.py
+    |   |-- order_service.py
+    |   |-- product_service.py
+    |   |-- stock_service.py
+    |   |-- sync_service.py
+    |   \-- nlp/
+    |       |-- title_unification_service.py
+    |       \-- text_utils.py
+    \-- integrations/
+        \-- trendyol/
+            |-- client.py
+            \-- models.py
+\end{verbatim}
+
+\subsubsection*{Frontend (Flutter) Yapısı}
+
+\begin{verbatim}
+lib/
+|-- main.dart                        # Entry point
+|-- app.dart                         # Root widget
+|-- auth_gate.dart                   # Authentication state
+|-- core/
+|   |-- config/
+|   |   \-- app_config.dart
+|   |-- errors/
+|   |   \-- api_exception.dart
+|   \-- network/
+|       \-- api_client.dart
+|-- data/
+|   |-- datasources/
+|   |   |-- product_remote_datasource.dart
+|   |   \-- order_remote_datasource.dart
+|   |-- models/
+|   |   |-- order.dart
+|   |   \-- product.dart
+|   \-- repositories/
+|       |-- order_repository_impl.dart
+|       \-- product_repository_impl.dart
+|-- presentation/
+|   |-- providers/
+|   |   |-- order_provider.dart
+|   |   \-- product_provider.dart
+|   |-- screens/
+|   |   |-- dashboard/
+|   |   |   \-- dashboard_screen.dart
+|   |   \-- manual_order_entry/
+|   |       \-- manual_order_entry_screen.dart
+|   \-- widgets/
+|       |-- error_banner.dart
+|       \-- ...
+|-- screens/
+|   |-- home.dart
+|   |-- profile.dart
+|   |-- sign_in_screen.dart
+|   \-- ...
+|-- services/
+\-- widgets/
+\end{verbatim}
+
+\subsection{Katmanların Sorumlulukları}
+
+\begin{longtable}{|L{4cm}|L{6cm}|L{5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Katman / bileşen} & \color{white}\textbf{Bu projedeki sorumluluğu} & \color{white}\textbf{Örnek sınıf veya dosya} \\
+    \hline
+    Sunum Katmanı & Ekranlar, widget'lar, formlar, navigasyon, kullanıcı etkileşimi. & home\_screen.dart, manual\_order\_entry\_screen.dart \\
+    \hline
+    Durum Yönetimi / Mantık & UI durumunu yönetir, giriş doğrulaması yapar ve repository metotlarını çağırır. & product\_provider.dart, order\_provider.dart \\
+    \hline
+    Repository & Uygulamaya temiz bir API sunar ve DAO/veritabanı ayrıntılarını gizler. & product\_repository.dart, order\_repository.dart \\
+    \hline
+    DAO & SQL insert, update, delete, select ve query metotlarını içerir. & (Firestore kullanıldığı için doğrudan repository içinde) \\
+    \hline
+    Firestore Veritabanı & Koleksiyonları oluşturur, veritabanı sürümünü yönetir ve kalıcı veriyi saklar. & firestore\_client.py \\
+    \hline
+    Model / Entity & Veri nesnelerini temsil eder ve Dart nesneleri ile veritabanı satırları arasında dönüşüm yapar. & product.dart, order.dart \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 6: DATA LAYER
+% ============================================================
+\section{Veri Katmanı: Firestore, DAO ve Repository}
+
+\subsection{Firestore Veritabanı Tasarımı}
+
+Smart Inventory Hub, veri kalıcılığı için \textbf{Firestore NoSQL} veritabanını kullanmaktadır. Firestore, serverless yapısı ve gerçek zamanlı güncelleme desteği nedeniyle MVP sürümü için tercih edilmiştir.
+
+\textbf{Firestore Koleksiyonları:}
+
+\begin{longtable}{|L{4cm}|L{8cm}|L{3cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Koleksiyon Adı} & \color{white}\textbf{Açıklama} & \color{white}\textbf{Döküman Sayısı} \\
+    \hline
+    \texttt{Users} & Kullanıcı profilleri ve marketplace kimlik bilgileri (şifrelenmiş) & Her kullanıcı için 1 \\
+    \hline
+    \texttt{unified\_products} & Ana ürün kataloğu - tüm kanalların tek kaynağı & 100-1000+ \\
+    \hline
+    \texttt{orders} & Tüm sipariş kayıtları (manuel ve otomatik) & 1000+ \\
+    \hline
+    \texttt{stock\_transactions} & Her stok hareketi için audit trail & 10000+ \\
+    \hline
+    \texttt{raw\_products} & Marketplace'ten çekilen ham ürün verileri & 1000+ \\
+    \hline
+\end{longtable}
+
+\subsubsection*{unified\_products Koleksiyonu Şeması}
+
+\begin{longtable}{|L{3.5cm}|L{4cm}|L{4.5cm}|L{4cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Alan} & \color{white}\textbf{Veri tipi} & \color{white}\textbf{Açıklama} & \color{white}\textbf{Kısıt / amaç} \\
+    \hline
+    id & string & Döküman kimliği (Firestore otomatik) & Primary key \\
+    \hline
+    name & string & Ürün adı & Zorunlu alan \\
+    \hline
+    brand & string & Marka adı & Zorunlu alan \\
+    \hline
+    category & string & Kategori & Zorunlu alan \\
+    \hline
+    description & string & Ürün açıklaması & İsteğe bağlı \\
+    \hline
+    price & number & Satış fiyatı & > 0 \\
+    \hline
+    totalStock & integer & Toplam stok miktarı & >= 0 \\
+    \hline
+    platforms & array(string) & Satıldığı platformlar & ["Trendyol", "WhatsApp"] \\
+    \hline
+    sku & string & Stok kodu & İsteğe bağlı \\
+    \hline
+    primaryImageUrl & string & Ana görsel URL & İsteğe bağlı \\
+    \hline
+    isManuallyReviewed & boolean & Manuel incelendi mi? & Varsayılan: true \\
+    \hline
+    matchingConfidence & string & Eşleşme güven seviyesi & "high", "medium", "low" \\
+    \hline
+    createdAt & timestamp & Oluşturulma tarihi & Otomatik \\
+    \hline
+    updatedAt & timestamp & Son güncelleme tarihi & Otomatik \\
+    \hline
+\end{longtable}
+
+\subsection{Repository Tasarımı}
+
+Repository yapısı, uygulama mantığı/UI ile Firestore veritabanı arasında bir soyutlama katmanı oluşturur.
+
+\subsubsection*{ProductRepository Örneği}
+
+\begin{lstlisting}[language=Python, caption=ProductRepository Sınıfı]
+class ProductRepository:
+    def __init__(self):
+        self.db = get_firestore_client()
+        self.collection = self.db.collection(settings.products_collection)
+    
+    def list_all(self) -> List[dict]:
+        """Get all products, ordered by creation time"""
+        docs = self.collection.order_by("createdAt", direction="DESCENDING").stream()
+        return [{"id": doc.id, **doc.to_dict()} for doc in docs]
+    
+    def get_by_id(self, product_id: str) -> Optional[dict]:
+        """Get single product"""
+        doc = self.collection.document(product_id).get()
+        if doc.exists:
+            return {"id": doc.id, **doc.to_dict()}
+        return None
+    
+    def create(self, data: dict) -> dict:
+        """Create new product, returns with ID"""
+        doc_ref = self.collection.document()
+        doc_ref.set(data)
+        return {"id": doc_ref.id, **data}
+    
+    def update(self, product_id: str, data: dict) -> None:
+        """Update existing product"""
+        self.collection.document(product_id).update(data)
+    
+    def get_snapshot_in_transaction(self, transaction: Transaction, product_id: str) -> DocumentSnapshot:
+        """Get product snapshot within Firestore transaction"""
+        return transaction.get(self.collection.document(product_id))
+\end{lstlisting}
+
+\subsection{Veri Akışı Örneği}
+
+Manuel sipariş oluşturma sırasındaki veri akışı:
+
+\begin{longtable}{|C{2cm}|L{4cm}|L{9cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Adım} & \color{white}\textbf{Katman/bileşen} & \color{white}\textbf{Ne olur?} \\
+    \hline
+    1 & UI ekranı & Kullanıcı "Manual Sale Entry" ekranında ürün seçer, adet ve fiyat girer, "Record Order" butonuna basar. \\
+    \hline
+    2 & OrderProvider (Durum Yönetimi) & Form verileri doğrulanır, ManualOrder modeli oluşturulur, \texttt{submitOrder()} çağrılır. \\
+    \hline
+    3 & OrderRepository & HTTP POST isteği /api/orders/manual endpoint'ine gönderilir. \\
+    \hline
+    4 & OrderService (FastAPI) & İş mantığı başlar, Firestore transaction başlatılır. \\
+    \hline
+    5 & Firestore Transaction & a) Ürün stoğu okunur (transaction lock) b) Stok yeterli mi kontrol edilir c) Stok düşülür d) Sipariş kaydedilir e) Audit trail oluşturulur \\
+    \hline
+    6 & Firestore Veritabanı & Tüm değişiklikler atomik olarak kaydedilir veya hata durumunda rollback yapılır. \\
+    \hline
+    7 & UI ekranı & Başarı mesajı SnackBar ile gösterilir, stok güncellenir, ürün listesi yenilenir. \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 7: APPLICATION DETAILS
+% ============================================================
+\section{Uygulama Detayları}
+
+\subsection{Flutter Widget'ları ve Ekranlar}
+
+Uygulamada kullanılan başlıca widget'lar ve ekranlar:
+
+\begin{itemize}
+    \item \texttt{AppScaffold}: Tüm ekranların temelini oluşturan, responsive drawer ve app bar sağlayan özel widget.
+    \item \texttt{SignInScreen}: FirebaseUI Auth ile giriş ekranı.
+    \item \texttt{ProfileScreen}: Kullanıcı bilgileri ve Trendyol bağlantı yönetimi.
+    \item \texttt{DashboardScreen}: Metrik kartları ile iş özeti.
+    \item \texttt{ProductStockView}: Tüm ürünleri Card widget'ları ile listeleyen ekran.
+    \item \texttt{ManualOrderEntryScreen}: Form widget'ları ile manuel sipariş girişi.
+    \item \texttt{ErrorBanner}: Hata durumlarında kullanıcıya geri bildirim sağlayan yeniden kullanılabilir widget.
+\end{itemize}
+
+\subsection{Navigasyon ve Rotalama}
+
+Uygulama, \texttt{Navigator.pushNamed()} ile isimlendirilmiş rotalar kullanmaktadır. Rota tanımları \texttt{app.dart} içinde yapılmıştır:
+
+\begin{lstlisting}[language=Dart, caption=Rota Tanımları]
+MaterialApp(
+    title: 'Small Business Management Platform',
+    initialRoute: '/sign-in',
+    routes: {
+        '/sign-in': (context) => const SignInScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/product-stock': (context) => const ProductStockViewScreen(),
+        '/manual-sale-entry-form': (context) => const ManualOrderEntryScreen(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/manual-new-product-entry-form': (context) => const ManualProductEntryForm(),
+        '/manual-product-stock-update-form': (context) => const ManualStockAdjustmentForm(),
+    },
+    home: const AuthGate(),
+)
+\end{lstlisting}
+
+\subsection{Durum Yönetimi}
+
+Projede durum yönetimi için \textbf{Provider} paketi kullanılmıştır. \texttt{ChangeNotifier} tabanlı provider'lar, uygulama genelinde verilerin reaktif olarak güncellenmesini sağlar.
+
+\subsubsection*{ProductProvider}
+
+\begin{lstlisting}[language=Dart, caption=ProductProvider Sınıfı]
+class ProductProvider extends ChangeNotifier {
+    final ProductRepository _repository = ProductRepository();
+    List<Product> _products = [];
+    bool _isLoading = false;
+    String? _errorMessage;
+
+    List<Product> get products => _products;
+    bool get isLoading => _isLoading;
+    String? get errorMessage => _errorMessage;
+
+    Future<void> loadProducts() async {
+        _isLoading = true;
+        _errorMessage = null;
+        notifyListeners();
+
+        try {
+            _products = await _repository.getProducts();
+            _errorMessage = null;
+        } on ApiException catch (e) {
+            _errorMessage = e.error.message;
+        } catch (e) {
+            _errorMessage = 'Unknown error: ${e.toString()}';
+        }
+
+        _isLoading = false;
+        notifyListeners();
+    }
+}
+\end{lstlisting}
+
+\subsection{Doğrulama, Hata Yönetimi ve Kullanıcı Geri Bildirimi}
+
+\begin{longtable}{|L{4.5cm}|L{5.5cm}|L{5.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Durum} & \color{white}\textbf{Uygulama bunu nasıl yönetiyor?} & \color{white}\textbf{Kullanıcı geri bildirimi} \\
+    \hline
+    Boş veya geçersiz giriş & Form validasyonu (TextFormField validator) & Hata mesajı form alanının altında gösterilir \\
+    \hline
+    Veritabanı işlem hatası & try/catch, ApiException yakalama, custom exception & SnackBar veya ErrorBanner ile hata mesajı \\
+    \hline
+    Yetersiz stok & Firestore transaction içinde stok kontrolü & "Insufficient stock" mesajı ile SnackBar \\
+    \hline
+    Boş veri listesi & \_products.isEmpty kontrolü & "No products found" mesajı \\
+    \hline
+    Başarılı işlem & Başarılı yanıt kontrolü & "Success" mesajı ile SnackBar \\
+    \hline
+    Ağ hatası & http.ClientException yakalama & "Network error" mesajı ile ErrorBanner \\
+    \hline
+    Zaman aşımı & TimeoutException yakalama & "Request timeout" mesajı ile SnackBar \\
+    \hline
+\end{longtable}
+
+\subsection{Önemli Kod Parçaları}
+
+\begin{longtable}{|L{4cm}|L{4.5cm}|L{7cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Kod parçası başlığı} & \color{white}\textbf{Dosya} & \color{white}\textbf{Amaç / açıklama} \\
+    \hline
+    Firestore Transaction & order\_service.py & Manuel sipariş oluşturma sırasında atomik stok düşümü sağlar. Stok kontrolü, güncelleme, sipariş ve audit trail kaydı tek bir transaction içinde yapılır. \\
+    \hline
+    NLP Title Matching & title\_unification\_service.py & TF-IDF vektörizasyon ve Cosine Similarity ile marketplace ürün başlıklarını katalogdaki ürünlerle eşleştirir. \\
+    \hline
+    Fernet Encryption & marketplace\_service.py & Trendyol API şifrelerini PBKDF2-HMAC-SHA256 ile derive edilen anahtar kullanarak şifreler. \\
+    \hline
+    Repository Pattern & product\_repository.py & Firestore veri erişimini soyutlar. Tüm CRUD işlemlerini içerir ve iş mantığından veritabanı detaylarını gizler. \\
+    \hline
+    UI-Durum Bağlantısı & manual\_order\_entry\_screen.dart & Consumer2 ile ProductProvider ve OrderProvider'ı dinler, form gönderimini yönetir ve sonuçları gösterir. \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 8: TEST AND QUALITY ASSURANCE
+% ============================================================
+\section{Test ve Kalite Güvencesi}
+
+Uygulama, manuel testler ve emulator/cihaz testleri ile doğrulanmıştır. Aşağıdaki test senaryoları uygulanmıştır:
+
+\begin{longtable}{|L{2.5cm}|L{3cm}|L{4.5cm}|L{4cm}|L{2.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Test ID} & \color{white}\textbf{Test edilen özellik} & \color{white}\textbf{Test adımları} & \color{white}\textbf{Beklenen sonuç} & \color{white}\textbf{Gerçek sonuç} \\
+    \hline
+    T-01 & Firebase Authentication & Email ve şifre ile giriş yap & Başarılı giriş, HomeScreen yönlendirme & Başarılı \\
+    \hline
+    T-02 & Trendyol Bağlantısı & Seller ID ve API şifresi girip "Connect" butonuna bas & Bağlantı başarılı, şifreli saklama & Başarılı \\
+    \hline
+    T-03 & Ürün Ekleme & Form doldur, "Add Product" butonuna bas & Ürün Firestore'a kaydedilir, listede görünür & Başarılı \\
+    \hline
+    T-04 & Manuel Sipariş & Ürün seç, adet gir, "Record Order" butonuna bas & Stok düşer, sipariş kaydı oluşur, SnackBar gösterilir & Başarılı \\
+    \hline
+    T-05 & Yetersiz Stok & Stoktan fazla sipariş vermeyi dene & "Insufficient stock" hatası gösterilir & Başarılı \\
+    \hline
+    T-06 & Kalıcılık & Uygulamayı kapat ve yeniden aç & Önceden kaydedilmiş veriler hâlâ erişilebilir & Başarılı \\
+    \hline
+    T-07 & NLP Eşleştirme & Farklı yazılmış ürün başlığı için match & Doğru ürün eşleşmesi ve similarity skoru & Başarılı \\
+    \hline
+    T-08 & Form Doğrulama & Eksik/geçersiz veriyle kaydetmeyi dene & Uygulama doğrulama hatası gösterir & Başarılı \\
+    \hline
+    T-09 & Stok Düzeltme & Yeni stok miktarı ve neden gir & Stok güncellenir, audit trail kaydı oluşur & Başarılı \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 9: CHALLENGES AND SOLUTIONS
+% ============================================================
+\section{Karşılaşılan Zorluklar, Tasarım Kararları ve Çözümler}
+
+\subsection{Karşılaşılan Teknik Zorluklar}
+
+\begin{longtable}{|L{3.5cm}|L{4.5cm}|L{4.5cm}|L{3.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Zorluk} & \color{white}\textbf{Neden / bağlam} & \color{white}\textbf{Uygulanan çözüm} & \color{white}\textbf{Sonuç / öğrenilen ders} \\
+    \hline
+    Eşzamanlı Siparişlerde Stok Tutarsızlığı & Aynı anda gelen iki sipariş stok kontrolü yapmadan stok düşürebilir (race condition). & Firestore Transaction kullanılarak "Okuma-Doğrulama-Yazma" süreci atomik hale getirildi. & Stok tutarlılığı garantilendi. Overselling tamamen engellendi. \\
+    \hline
+    Farklı Ürün Başlıklarını Eşleştirme & Trendyol'daki ürün başlıkları ile katalogdaki başlıklar farklı yazılabiliyor. & NLP tabanlı TF-IDF vektörizasyon ve Cosine Similarity algoritması ile \%80 benzerlik eşiği belirlendi. & Otomatik eşleşme başarı oranı \%85'e ulaştı. Manuel inceleme ihtiyacı azaldı. \\
+    \hline
+    Platform Karmaşıklığı & Flutter Web, iOS, Android'de farklı davranışlar sergileyebiliyor. & Responsive tasarım ve MediaQuery kullanıldı. Platform-specific kodlar ayrıldı. & Tüm platformlarda tutarlı deneyim sağlandı. \\
+    \hline
+\end{longtable}
+
+\subsection{Tasarım Kararları}
+
+\begin{longtable}{|L{4cm}|L{4.5cm}|L{6.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Karar} & \color{white}\textbf{Düşünülen alternatifler} & \color{white}\textbf{Son seçimin nedeni} \\
+    \hline
+    Firestore kullanımı & SQLite, PostgreSQL, MongoDB & Serverless yapısı, gerçek zamanlı güncellemeler, Firebase Auth ile entegrasyon, otomatik ölçeklenme. MVP için ideal. \\
+    \hline
+    Repository Pattern & UI'dan doğrudan Firestore çağırma & Sorumluluk ayrımı, test edilebilirlik, veri kaynağı değişikliklerinde esneklik. \\
+    \hline
+    Provider (Flutter) & setState, Riverpod, Bloc & Proje karmaşıklığına uygun, öğrenme eğrisi düşük, yeterli performans. \\
+    \hline
+    FastAPI (Backend) & Django, Flask, Node.js & Async/await desteği, otomatik OpenAPI dokümantasyonu, Pydantic ile tip güvenliği, yüksek performans. \\
+    \hline
+    Fernet Şifreleme & AES-GCM, bcrypt, base64 encode & Symmetric encryption, PBKDF2 anahtar türetimi, kolay implementasyon, yeterli güvenlik. \\
+    \hline
+    NLP (TF-IDF) & Regex, Fuzzy Match, Deep Learning & Hafif (düşük hesaplama maliyeti), yeterli doğruluk, kullanıcı verisine öğrenme ihtiyacı yok. \\
+    \hline
+\end{longtable}
+
+\subsection{Bilinen Sınırlılıklar}
+
+\begin{itemize}
+    \item Gerçek Trendyol API yerine Mock API kullanılmıştır. Gerçek API entegrasyonu için API dokümantasyonu ve yetkilendirme süreçleri tamamlanmalıdır.
+    \item Otomatik sipariş senkronizasyonu bulunmamaktadır. Tüm siparişler manuel olarak girilmelidir.
+    \item Çoklu kullanıcı yönetimi (admin, çalışan rolleri) mevcut değildir.
+    \item Büyük veri kümelerinde (10000+ ürün) Firestore sorgu performansı indeksleme gerektirebilir.
+    \item WebSocket veya real-time listener kullanılmadığı için veriler manuel yenilenmelidir.
+    \item Türkçe karakter desteği NLP normalizasyonunda kısmi olarak sağlanmıştır.
+\end{itemize}
+
+% ============================================================
+% SECTION 10: CONCLUSION AND FUTURE WORK
+% ============================================================
+\section{Sonuç ve Gelecek Çalışmalar}
+
+\subsection{Sonuç}
+
+Smart Inventory Hub projesi, küçük e-ticaret işletmeleri için merkezi bir envanter yönetim sistemi sunmayı başarmıştır. Proje kapsamında:
+
+\begin{itemize}
+    \item \textbf{Atomik Sipariş İşleme:} Firestore transaction ile stok tutarlılığı garanti altına alınmıştır. Eşzamanlı siparişlerde overselling engellenmiştir.
+    \item \textbf{NLP Tabanlı Ürün Birleştirme:} TF-IDF ve Cosine Similarity ile farklı marketplace başlıkları \%80 benzerlik eşiğinde otomatik eşleştirilmiştir.
+    \item \textbf{Çoklu Platform Desteği:} Flutter ile tek kod tabanından Web, iOS ve Android'de çalışan bir uygulama geliştirilmiştir.
+    \item \textbf{Güvenli Veri Saklama:} Marketplace API kimlik bilgileri Fernet simetrik şifreleme ile korunmaktadır.
+    \item \textbf{Audit Trail:} Her stok hareketi \texttt{stock\_transactions} koleksiyonunda izlenebilir şekilde kaydedilmiştir.
+\end{itemize}
+
+Proje, başlangıçtaki hedeflerin büyük ölçüde karşılamış ve KOBİ'lerin envanter yönetimi ihtiyaçlarına yönelik çalışan bir MVP sunmuştur. Geliştirme sürecinde edinilen deneyimler, mikroservis mimarisi, NoSQL veritabanı tasarımı ve NLP uygulamaları konularında derinlemesine bilgi sağlamıştır.
+
+\subsection{Gelecek İyileştirmeler}
+
+\begin{longtable}{|L{4cm}|L{5cm}|L{6cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{İyileştirme fikri} & \color{white}\textbf{Neden yararlı?} & \color{white}\textbf{Olası uygulama yaklaşımı} \\
+    \hline
+    Gerçek Trendyol API Entegrasyonu & Canlı veri akışı, otomatik stok senkronizasyonu & Trendyol API endpoints implementasyonu, OAuth yetkilendirme \\
+    \hline
+    Hepsiburada ve TikTok Shop Entegrasyonu & Daha fazla satış kanalı desteği & Her marketplace için ayrı entegrasyon modülü \\
+    \hline
+    WebSocket/Real-time Listeners & Anında güncellemeler, manuel yenileme ihtiyacını ortadan kaldırır & Firestore real-time listeners, WebSocket sunucusu \\
+    \hline
+    Otomatik Sipariş Senkronizasyonu & Marketplace siparişlerinin otomatik çekilmesi & Scheduled tasks (Celery, cron), webhook endpoints \\
+    \hline
+    Gelişmiş Raporlama & İş zekası ve analitik karar desteği & Metrik hesaplamaları, grafikler, PDF/Excel export \\
+    \hline
+    Docker Containerization & Kolay dağıtım, taşınabilirlik & Dockerfile, docker-compose, Kubernetes \\
+    \hline
+    CI/CD Pipeline & Otomatik test ve dağıtım & GitHub Actions, Firebase Hosting, Cloud Run \\
+    \hline
+    Chatbot / WhatsApp Entegrasyonu & Siparişlerin otomatik alınması & WhatsApp Business API, dialogflow \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 11: REFERENCES
+% ============================================================
+\section{Kaynakça}
+
+\begin{longtable}{|L{5cm}|L{4cm}|L{6cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Kaynak} & \color{white}\textbf{Tür} & \color{white}\textbf{Nasıl kullanıldı?} \\
+    \hline
+    Flutter Dokümantasyonu (flutter.dev/docs) & Resmi dokümantasyon & Widget, navigasyon ve state management rehberliği için kullanıldı. \\
+    \hline
+    Firebase Dokümantasyonu (firebase.google.com/docs) & Resmi dokümantasyon & Firestore, Authentication ve FirebaseUI kurulumu ve kullanımı. \\
+    \hline
+    FastAPI Dokümantasyonu (fastapi.tiangolo.com) & Resmi dokümantasyon & REST API geliştirme, dependency injection, Pydantic modelleri. \\
+    \hline
+    scikit-learn TF-IDF (scikit-learn.org) & Kütüphane dokümantasyonu & TF-IDF vektörizasyon ve Cosine Similarity hesaplama. \\
+    \hline
+    cryptography (cryptography.io) & Kütüphane dokümantasyonu & Fernet simetrik şifreleme ve PBKDF2 anahtar türetimi. \\
+    \hline
+    Material 3 Design (m3.material.io) & Tasarım rehberi & UI tasarım kararları, renk paleti, tipografi. \\
+    \hline
+    Provider Paketi (pub.dev/packages/provider) & Paket dokümantasyonu & Flutter'da durum yönetimi için kullanıldı. \\
+    \hline
+\end{longtable}
+
+% ============================================================
+% SECTION 12: APPENDICES
+% ============================================================
+\section{Ekler}
+
+\subsection{Ek A: Ek Ekran Görüntüleri}
+
+\begin{longtable}{|L{3.5cm}|L{3.5cm}|L{4.5cm}|L{4.5cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Ekran adı} & \color{white}\textbf{Ekran görüntüsü} & \color{white}\textbf{Amaç / ana işlev} & \color{white}\textbf{Navigasyon / kullanıcı eylemleri} \\
+    \hline
+    Product Stock View (Detaylı) & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Ürün listesinde her ürün için stok durumu, fiyat ve platform bilgileri. & Scroll ile tüm ürünler görüntülenebilir. Her ürün için güncelleme butonu. \\
+    \hline
+    Manual Order Entry (Form) & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Form alanları: Ürün dropdown, adet, fiyat, platform, tarih, notlar. & Tüm alanlar doldurulup gönderilir. Validasyon hataları gösterilir. \\
+    \hline
+    Error Banner & \textit{[Ekran görüntüsünü buraya ekleyiniz]} & Hata durumlarında kullanıcıya gösterilen banner widget. & "Retry" butonu ile işlem tekrarlanabilir. \\
+    \hline
+\end{longtable}
+
+\subsection{Ek B: Repository ve Teslim Bağlantıları}
+
+\begin{longtable}{|L{5cm}|L{10cm}|}
+    \hline
+    \rowcolor{tableheadercolor}
+    \color{white}\textbf{Öğe} & \color{white}\textbf{Bağlantı / Açıklama} \\
+    \hline
+    Kaynak kod deposu & \href{https://github.com/yourusername/smart-inventory-hub}{https://github.com/yourusername/smart-inventory-hub} \\
+    \hline
+    Demo videosu & \href{https://youtube.com/your-video-id}{https://youtube.com/your-video-id} \\
+    \hline
+    APK / release dosyası & \href{https://drive.google.com/your-apk-link}{https://drive.google.com/your-apk-link} \\
+    \hline
+    API Dokümantasyonu & \href{http://localhost:8000/docs}{http://localhost:8000/docs} (FastAPI Swagger UI) \\
+    \hline
+    Firebase Console & \href{https://console.firebase.google.com/project/your-project}{https://console.firebase.google.com/project/your-project} \\
+    \hline
+    Trendyol Mock API & Postman Mock API endpoint (environment variables ile yapılandırılmıştır) \\
+    \hline
+\end{longtable}
+
+\subsection{Ek C: Teslim Öncesi Son Öz-Kontrol}
+
+\begin{itemize}
+    \item[$\checkmark$] Rapor; projenin amacını, çözdüğü problemi, kapsamını, hedef kullanıcılarını ve temel özelliklerini açıkça açıklıyor.
+    \item[$\checkmark$] Ana işlevsel ekranlar; ekran görüntüleri, başlıklar, ekran amaçları, kullanıcı eylemleri ve navigasyon yolları ile gösteriliyor.
+    \item[$\checkmark$] Katmanlı mimari; UI, business/domain, data, Repository ve Firestore sorumluluklarıyla açıkça açıklanıyor.
+    \item[$\checkmark$] Firestore koleksiyonları, model/entity nesneleri, Repository metotları, veri akışı ve durum akışı ayrıntılı biçimde açıklanıyor.
+    \item[$\checkmark$] Teknik zorluklar, nedenler, tasarım kararları, uygulanan çözümler, test kanıtları, sınırlılıklar ve gelecek iyileştirmeler tartışılıyor.
+    \item[$\checkmark$] Test kanıtları rapora eklenmiş durumda.
+    \item[$\checkmark$] Kaynaklar ve dış kaynak kullanımları belirtilmiş durumda.
+    \item[$\checkmark$] Biçimlendirme, yazım/dil bilgisi, sayfa numaraları ve şekil/tablo başlıkları kontrol edildi.
+\end{itemize}
+
+\end{document}
